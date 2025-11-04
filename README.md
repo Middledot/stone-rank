@@ -1,7 +1,9 @@
-# Tauri + React
+# Stone's Rank
 
-This template should help get you started developing with Tauri and React in Vite.
+An app my friend asked me to make to rank songs. It is a very one-use-case app.
 
-## Recommended IDE Setup
+<hr>
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+I will take this project as an opportunity to:
+1. _actually_ learn tauri this time (html + rust + data management)
+2. learn unit testing
