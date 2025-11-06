@@ -75,20 +75,35 @@ function App() {
       <div className="awe-tab">
         <div className="home">
           <div className="cover-display">
+            <h2 className="cover-display-title">Album Cover</h2>
             <img
               className="cover-display-image"
               src={imgSrc}
             />
           </div>
           <div className="integrated-player">
-            text
+            <h2 className="cover-display-title">Spotify Player</h2>
           </div>
           <div className="source-selector">
-            text
+            <h2 className="cover-display-title">Player Picker</h2>
           </div>
-          <div className="unranked-list"></div>
-          <div className="ranked-list"></div>
-          <div className="text-modifier"></div>
+          <div className="unranked-list">
+            <h2 className="cover-display-title">Unranked List</h2>
+            {/* 
+              TODO:
+               - Reusable list interface
+            */}
+          </div>
+          <div className="ranked-list">
+            <h2 className="cover-display-title">Ranked List</h2>
+          </div>
+          <div className="text-modifier">
+            <h2 className="cover-display-title">Comment Editor</h2>
+            {/* 
+              TODO:
+               - Text editor
+            */}
+          </div>
         </div>
       </div>
     </main>
