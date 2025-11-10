@@ -47,6 +47,7 @@ export async function triggerLogin() {
     }
 
     authUrl.search = new URLSearchParams(params).toString();
+    localStorage.removeItem("access_token");  // TODO: figure out long term token storage!!
     window.location.href = authUrl.toString();
 }
 
@@ -67,33 +68,33 @@ export async function triggerResponse() {
                 return Promise.resolve(error);
             });
         // console.log("load:", value);
-        if (value == "damn straight..." || localStorage.getItem("logged_on")) {
+        if (value !== "err") {
+            console.log("tag, ur it,", value !== "err")
             localStorage.setItem("logged_on", true);
+            // TODO: separate retrieve_access_token function?
+            localStorage.setItem("access_token", value);
         } else {
             localStorage.setItem("logged_on", false);
         }
-
-        // const url = "https://accounts.spotify.com/api/token";
-        // const payload = {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/x-www-form-urlencoded',
-        //     },
-        //     body: new URLSearchParams({
-        //         client_id: CLIENT_ID,
-        //         grant_type: 'authorization_code',
-        //         code,
-        //         redirect_uri: redirectUri,
-        //         code_verifier: codeVerifier,
-        //     }),
-        // }
-
-
-        // const body = await fetch(url, payload);
-        // console.log(body);
-        // const response = await body.json();
-
-        // localStorage.setItem('access_token', response.access_token);
     }
     localStorage.removeItem('code_verifier')
+}
+
+export async function getUsername() {
+    let token = localStorage.getItem('access_token');
+    console.log(typeof token, "huh")
+    console.log(token)
+    if (token == "undefined" || token == null) {
+        return "Not Logged In"
+    }
+
+    const response = await fetch('https://api.spotify.com/v1/me', {
+        headers: {
+        Authorization: 'Bearer ' + token
+        }
+    });
+
+    const data = await response.json();
+    console.log(data);
+    return data.display_name;
 }

@@ -1,3 +1,4 @@
+use tauri::Manager;
 use tauri::State;
 use tokio::sync::Mutex;
 use std::collections::HashMap;
@@ -41,7 +42,7 @@ async fn retrieve_auth(state: State<'_, Mutex<SessionState>>, code_verifier: Str
 
     if body.is_err() {
         println!("failed");
-        Err("damn :(".to_string())
+        Err("err".to_string())
     } else {
         // response is for sure successful, unwrap and save the contents
         let response = body.unwrap();
@@ -55,14 +56,26 @@ async fn retrieve_auth(state: State<'_, Mutex<SessionState>>, code_verifier: Str
         state.access_token = Some(response.access_token);
         state.refresh_token = Some(response.refresh_token);
 
-        Ok("damn straight...".to_string())
+        Ok(state.access_token.clone().unwrap())
     }
 }
+
+// #[tauri::command]
+// async fn get_login_info(state: State<'_, Mutex<SessionState>>) -> Result<String, String> {
+//     // duh duh duh
+
+//     let client = reqwest::Client::new();
+
+
+//     Ok("Not Logged In")
+// }
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // TODO: how do we want to store tokens long term (refresh tokens, save to js file (that one's probably not safe))
         .manage(Mutex::new(SessionState {
             access_token: None,
             refresh_token: None

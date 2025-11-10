@@ -3,22 +3,35 @@ import reactLogo from "./assets/react.svg";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
-import { triggerLogin, triggerResponse } from "./auth.jsx"
+import { triggerLogin, triggerResponse, getUsername } from "./auth.jsx"
 import "./App.css";
 
 function App() {
   // let fileUrl = convertFileSrc(appDataDir()+"/excursions.jpg")
-
   const [imgSrc, setImgSrc] = useState("https://f4.bcbits.com/img/a0401863863_16.jpg")
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // const loadUsername = async () => {
+  //   try {
+  //     const response = await invoke('get_login_info'); // Invoke the 'greet' command with arguments
+  //     setMessage(response);
+  //   } catch (error) {
+  //     console.error('guh?:', error);
+  //   }
+  // };
+
+  const [username, setUsername] = useState('Not Logged In');
 
   useEffect(() => {
     const check = async () => {
       try {
         // console.log("I got triggered!")
         await triggerResponse()
+        setUsername(await getUsername());
+      // } catch (err) {
+
       } catch (err) {
         console.log(err)
         setError(err);
@@ -43,6 +56,9 @@ function App() {
           <button className="header-button" type="submit">Downloads</button>
           <button className="header-button" type="submit">Format</button>
           <button className="header-button" type="submit" onClick={triggerLogin}>Login</button>
+        </div>
+        <div className="login-display">
+          <p>{username}</p>
         </div>
       </div>
 
