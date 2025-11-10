@@ -1,59 +1,9 @@
-// import { useState } from "react";
-// import reactLogo from "./assets/react.svg";
-// import { invoke } from "@tauri-apps/api/core";
-// import "./App.css";
-
-// function App() {
-//   const [greetMsg, setGreetMsg] = useState("");
-//   const [name, setName] = useState("");
-
-//   async function greet() {
-//     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-//     setGreetMsg(await invoke("greet", { name }));
-//   }
-
-//   return (
-//     <main className="container">
-//       <h1>Welcome to Tauri + React</h1>
-
-//       <div className="row">
-//         <a href="https://vitejs.dev" target="_blank">
-//           <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-//         </a>
-//         <a href="https://tauri.app" target="_blank">
-//           <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-//         </a>
-//         <a href="https://reactjs.org" target="_blank">
-//           <img src={reactLogo} className="logo react" alt="React logo" />
-//         </a>
-//       </div>
-//       <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-//       <form
-//         className="row"
-//         onSubmit={(e) => {
-//           e.preventDefault();
-//           greet();
-//         }}
-//       >
-//         <input
-//           id="greet-input"
-//           onChange={(e) => setName(e.currentTarget.value)}
-//           placeholder="Enter a name..."
-//         />
-//         <button type="submit">Greet</button>
-//       </form>
-//       <p>{greetMsg}</p>
-//     </main>
-//   );
-// }
-
-// export default App;
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
+
+import { triggerLogin, triggerResponse } from "./auth.jsx"
 import "./App.css";
 
 function App() {
@@ -61,6 +11,25 @@ function App() {
 
   const [imgSrc, setImgSrc] = useState("https://f4.bcbits.com/img/a0401863863_16.jpg")
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        await triggerResponse()
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    check();
+  }, []);
+
+  if (loading) return <p>Loading data...</p>;
+  if (error) return <p>Error: {error.message}</p>;
 
   return (
     <main className="higher-power">
@@ -70,6 +39,7 @@ function App() {
         <button className="header-button" type="submit">Home</button>
         <button className="header-button" type="submit">Downloads</button>
         <button className="header-button" type="submit">Format</button>
+        <button className="header-button" type="submit" onClick={triggerLogin}>Login</button>
       </div>
 
       <div className="awe-tab">
