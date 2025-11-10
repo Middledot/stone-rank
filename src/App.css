@@ -17,6 +17,11 @@ body {
   height: 100vh;
 }
 
+.specific-header {
+  display: flex;
+  flex-direction: column;
+}
+
 .general-header {
   grid-area: header;
   background-color: dodgerblue;
@@ -26,6 +31,8 @@ body {
 .general-header h1 {
   margin: 0
 }
+
+.login-display {}
 
 .awe-tab {
   grid-area: tab;

@@ -1,14 +1,73 @@
+use tauri::State;
+use tokio::sync::Mutex;
+use std::collections::HashMap;
+use serde::Deserialize;
+
+pub struct SessionState {
+    pub access_token: Option<String>,
+    pub refresh_token: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SpotifySuccessfulResponse {
+    access_token: String,
+    token_type: String,
+    expires_in: i32,
+    refresh_token: String,
+    scope: String
+}
+
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+// TODO: ...what is 'static?
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+async fn retrieve_auth(state: State<'_, Mutex<SessionState>>, code_verifier: String, code: String) -> Result<String, String> {
+    // TODO: url encode, make more dynamic
+    let client = reqwest::Client::new();
+
+    let mut params = HashMap::new();
+    params.insert("client_id", "0c337be3f1164b81ac0fb432845ae93d");
+    params.insert("grant_type", "authorization_code");
+    params.insert("code", &code);
+    params.insert("redirect_uri", "http://127.0.0.1:1420");
+    params.insert("code_verifier", &code_verifier);
+
+    let response = client.post("https://accounts.spotify.com/api/token")
+        .form(&params)
+        .send()
+        .await
+        .expect("error");
+    let body = response.json::<SpotifySuccessfulResponse>().await;
+
+    if body.is_err() {
+        println!("failed");
+        Err("damn :(".to_string())
+    } else {
+        // response is for sure successful, unwrap and save the contents
+        let response = body.unwrap();
+        
+
+        println!("access_token:\n{}", response.access_token);
+        println!("refresh_token:\n{}", response.refresh_token);
+
+        let mut state = state.lock().await;
+
+        state.access_token = Some(response.access_token);
+        state.refresh_token = Some(response.refresh_token);
+
+        Ok("damn straight...".to_string())
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(Mutex::new(SessionState {
+            access_token: None,
+            refresh_token: None
+        }))
+        .invoke_handler(tauri::generate_handler![retrieve_auth])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

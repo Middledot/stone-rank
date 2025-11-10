@@ -4,3 +4,6 @@
 fn main() {
     stone_rank_lib::run()
 }
+
+
+// Use Tauri's Managed state to deal with app-lifetime tokens and such

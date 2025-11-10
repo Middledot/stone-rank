@@ -17,8 +17,10 @@ function App() {
   useEffect(() => {
     const check = async () => {
       try {
+        // console.log("I got triggered!")
         await triggerResponse()
       } catch (err) {
+        console.log(err)
         setError(err);
       } finally {
         setLoading(false);
@@ -29,17 +31,19 @@ function App() {
   }, []);
 
   if (loading) return <p>Loading data...</p>;
-  if (error) return <p>Error: {error.message}</p>;
+  if (error) return <p>Error?: {error.message} {error}</p>;
 
   return (
     <main className="higher-power">
-      <div className="general-header">
-        <h1>StoneRank</h1>
+      <div className="specific-header">
+        <div className="general-header">
+          <h1>StoneRank</h1>
 
-        <button className="header-button" type="submit">Home</button>
-        <button className="header-button" type="submit">Downloads</button>
-        <button className="header-button" type="submit">Format</button>
-        <button className="header-button" type="submit" onClick={triggerLogin}>Login</button>
+          <button className="header-button" type="submit">Home</button>
+          <button className="header-button" type="submit">Downloads</button>
+          <button className="header-button" type="submit">Format</button>
+          <button className="header-button" type="submit" onClick={triggerLogin}>Login</button>
+        </div>
       </div>
 
       <div className="awe-tab">
