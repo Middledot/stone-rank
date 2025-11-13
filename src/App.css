@@ -1,3 +1,18 @@
+/* html, body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+}
+
+.higher-power::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+} */
+
 body {
   margin: 0;
   padding: 0;
@@ -15,31 +30,45 @@ body {
   /* gap: 3px; */
   /* padding: 5px; */
   height: 100vh;
+  width: 100%;
 }
 
 .specific-header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  width: 100%;
+  grid-area: header;
+  background-color: dodgerblue;
 }
 
 .general-header {
-  grid-area: header;
-  background-color: dodgerblue;
-  padding: 5px
+  padding: 5px;
 }
+
 
 .general-header h1 {
   margin: 0
 }
 
-.login-display {}
+.login-display {
+  margin-left: auto;
+  max-height: 100%;
+  padding: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center
+}
+
+.login-display img {
+  padding: 5px;
+  border-radius: 50px
+}
 
 .awe-tab {
   grid-area: tab;
   background-color: rebeccapurple;
   max-height: 100%
 }
-
 
 .home {
     display: grid;
@@ -71,31 +100,34 @@ body {
   max-height: 100%;
 }
 
-
 .integrated-player {
   grid-area: player;
   background-color: green;
   height: 100%;
   width: 100%;
 }
+
 .source-selector {
   grid-area: source;
   background-color: peru;
   height: 100%;
   width: 100%;
 }
+
 .unranked-list {
   grid-area: unranked;
   background-color: bisque;
   height: 100%;
   width: 100%;
 }
+
 .ranked-list {
   grid-area: ranked;
   background-color: orangered;
   height: 100%;
   width: 100%;
 }
+
 .text-modifier {
   grid-area: text;
   background-color: white;

@@ -1,37 +1,28 @@
 import { useState, useEffect } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
-import { triggerLogin, triggerResponse, getUsername } from "./auth.jsx"
+import { triggerLogin, triggerResponse, getProfile } from "./auth.jsx"
 import "./App.css";
 
 function App() {
   // let fileUrl = convertFileSrc(appDataDir()+"/excursions.jpg")
-  const [imgSrc, setImgSrc] = useState("https://f4.bcbits.com/img/a0401863863_16.jpg")
+  const [albumThumbSrc, setAlbumThumbSrc] = useState("https://f4.bcbits.com/img/a0401863863_16.jpg")
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // const loadUsername = async () => {
-  //   try {
-  //     const response = await invoke('get_login_info'); // Invoke the 'greet' command with arguments
-  //     setMessage(response);
-  //   } catch (error) {
-  //     console.error('guh?:', error);
-  //   }
-  // };
-
-  const [username, setUsername] = useState('Not Logged In');
+  const [username, setUsername] = useState('Jo Doe');
+  const [pfp, setPfp] = useState('https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
 
   useEffect(() => {
     const check = async () => {
       try {
         // console.log("I got triggered!")
         await triggerResponse()
-        setUsername(await getUsername());
-      // } catch (err) {
-
+        let profile = await getProfile();
+        setUsername(profile[0]);
+        setPfp(profile[1]);
       } catch (err) {
         console.log(err)
         setError(err);
@@ -59,6 +50,7 @@ function App() {
         </div>
         <div className="login-display">
           <p>{username}</p>
+          <img src={pfp} height="32" width="32" />
         </div>
       </div>
 
@@ -68,7 +60,7 @@ function App() {
             <h2 className="cover-display-title">Album Cover</h2>
             <img
               className="cover-display-image"
-              src={imgSrc}
+              src={albumThumbSrc}
             />
           </div>
           <div className="integrated-player">

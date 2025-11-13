@@ -1,25 +1,25 @@
+import { invoke } from "@tauri-apps/api/core";
+
 // PKCE auth
 // https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
 
-import { invoke } from "@tauri-apps/api/core";
-
 function generateRandomString(length) {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const values = crypto.getRandomValues(new Uint8Array(length));
-  return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const values = crypto.getRandomValues(new Uint8Array(length));
+    return values.reduce((acc, x) => acc + possible[x % possible.length], "");
 }
 
 async function sha256(plain) {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(plain)
-  return window.crypto.subtle.digest('SHA-256', data)
+    const encoder = new TextEncoder()
+    const data = encoder.encode(plain)
+    return window.crypto.subtle.digest('SHA-256', data)
 }
 
 function base64encode(input) {
-  return btoa(String.fromCharCode(...new Uint8Array(input)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+    return btoa(String.fromCharCode(...new Uint8Array(input)))
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
 }
 
 const CLIENT_ID = '0c337be3f1164b81ac0fb432845ae93d';
@@ -67,9 +67,8 @@ export async function triggerResponse() {
                 console.log(error);
                 return Promise.resolve(error);
             });
-        // console.log("load:", value);
         if (value !== "err") {
-            console.log("tag, ur it,", value !== "err")
+            // console.log("tag, ur it,", value !== "err")
             localStorage.setItem("logged_on", true);
             // TODO: separate retrieve_access_token function?
             localStorage.setItem("access_token", value);
@@ -80,21 +79,33 @@ export async function triggerResponse() {
     localStorage.removeItem('code_verifier')
 }
 
-export async function getUsername() {
+export async function getProfile() {
     let token = localStorage.getItem('access_token');
-    console.log(typeof token, "huh")
-    console.log(token)
     if (token == "undefined" || token == null) {
         return "Not Logged In"
     }
 
-    const response = await fetch('https://api.spotify.com/v1/me', {
+    // TODO: generalize this api handling
+    return await fetch('https://api.spotify.com/v1/me', {
         headers: {
         Authorization: 'Bearer ' + token
         }
+    })
+    .then(response => {
+        if (response.status === 401) {
+            console.error('Authentication failed: 401 Unauthorized');
+            throw new Error('Unauthorized');
+        } else if (!response.ok) {
+            console.error(`HTTP error! Status: ${response.status}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        return [data.display_name, data.images.url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"];
+    })
+    .catch(_ => {
+        // This catch block will handle network errors or errors explicitly thrown in the .then block
+        return ["Jo Doe", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
     });
-
-    const data = await response.json();
-    console.log(data);
-    return data.display_name;
 }
