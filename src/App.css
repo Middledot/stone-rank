@@ -27,13 +27,11 @@ body {
     "tab tab";
   grid-template-rows: auto 1fr;
   grid-template-columns: 1fr 2fr;
-  /* gap: 3px; */
-  /* padding: 5px; */
   height: 100vh;
   width: 100%;
 }
 
-.specific-header {
+.header {
   display: flex;
   flex-direction: row;
   width: 100%;
@@ -41,14 +39,15 @@ body {
   background-color: dodgerblue;
 }
 
-.general-header {
+.title-and-tabs {
   padding: 5px;
 }
 
-
-.general-header h1 {
+.title-and-tabs h1 {
   margin: 0
 }
+
+.header-tab-btn {}
 
 .login-display {
   margin-left: auto;
@@ -64,21 +63,19 @@ body {
   border-radius: 50px
 }
 
-.awe-tab {
+.tab-area {
   grid-area: tab;
   background-color: rebeccapurple;
   max-height: 100%
 }
 
-.home {
-    display: grid;
+.hub {
+  display: grid;
   grid-template-areas:
     "image player source"
     "unranked ranked text";
   grid-template-rows: 1fr 2fr;
   grid-template-columns: 1fr 1fr 1fr;
-  /* gap: 3px; */
-  /* padding: 5px; */
   max-height: 100%;
 }
 

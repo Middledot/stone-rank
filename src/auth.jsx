@@ -10,6 +10,7 @@ function generateRandomString(length) {
 }
 
 async function sha256(plain) {
+    // Q: why async?
     const encoder = new TextEncoder()
     const data = encoder.encode(plain)
     return window.crypto.subtle.digest('SHA-256', data)
@@ -82,7 +83,7 @@ export async function triggerResponse() {
 export async function getProfile() {
     let token = localStorage.getItem('access_token');
     if (token == "undefined" || token == null) {
-        return "Not Logged In"
+        return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
     }
 
     // TODO: generalize this api handling
@@ -106,6 +107,6 @@ export async function getProfile() {
     })
     .catch(_ => {
         // This catch block will handle network errors or errors explicitly thrown in the .then block
-        return ["Jo Doe", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
+        return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
     });
 }

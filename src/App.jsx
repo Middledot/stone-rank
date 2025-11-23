@@ -39,14 +39,14 @@ function App() {
 
   return (
     <main className="higher-power">
-      <div className="specific-header">
-        <div className="general-header">
+      <div className="header">
+        <div className="title-and-tabs">
           <h1>StoneRank</h1>
 
-          <button className="header-button" type="submit">Home</button>
-          <button className="header-button" type="submit">Downloads</button>
-          <button className="header-button" type="submit">Format</button>
-          <button className="header-button" type="submit" onClick={triggerLogin}>Login</button>
+          <button className="header-tab-btn" type="submit">Home</button>
+          <button className="header-tab-btn" type="submit">Downloads</button>
+          <button className="header-tab-btn" type="submit">Format</button>
+          <button className="header-tab-btn" type="submit" onClick={triggerLogin}>Login</button>
         </div>
         <div className="login-display">
           <p>{username}</p>
@@ -54,8 +54,8 @@ function App() {
         </div>
       </div>
 
-      <div className="awe-tab">
-        <div className="home">
+      <div className="tab-area">
+        <div className="hub">
           <div className="cover-display">
             <h2 className="cover-display-title">Album Cover</h2>
             <img
