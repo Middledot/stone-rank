@@ -40,14 +40,35 @@ body {
 }
 
 .title-and-tabs {
-  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: space-evenly;
 }
 
 .title-and-tabs h1 {
   margin: 0
 }
 
-.header-tab-btn {}
+.header-tab-btn-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: row
+}
+
+.header-tab-btn {
+  text-decoration: none;
+  border: none;
+  background-color: dodgerblue;
+  flex-grow: 1;
+}
+
+.header-tab-btn-login {
+  background-color: rgb(120, 177, 235);
+}
+
+.header-tab-btn:hover {
+  background-color: rgb(14, 98, 182)
+}
 
 .login-display {
   margin-left: auto;

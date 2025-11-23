@@ -43,10 +43,12 @@ function App() {
         <div className="title-and-tabs">
           <h1>StoneRank</h1>
 
-          <button className="header-tab-btn" type="submit">Home</button>
-          <button className="header-tab-btn" type="submit">Downloads</button>
-          <button className="header-tab-btn" type="submit">Format</button>
-          <button className="header-tab-btn" type="submit" onClick={triggerLogin}>Login</button>
+          <div className="header-tab-btn-container">
+            <button className="header-tab-btn" type="submit">Home</button>
+            <button className="header-tab-btn" type="submit">Downloads</button>
+            <button className="header-tab-btn" type="submit">Format</button>
+            <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogin}>Login</button>
+          </div>
         </div>
         <div className="login-display">
           <p>{username}</p>
