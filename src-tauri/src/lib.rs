@@ -4,9 +4,16 @@ use tokio::sync::Mutex;
 use std::collections::HashMap;
 use serde::Deserialize;
 
+use std::fs::File;
+use std::io::BufReader;
+
+use serde_json::Value;
+
 pub struct SessionState {
     pub access_token: Option<String>,
     pub refresh_token: Option<String>,
+    pub playlist_url: String
+
 }
 
 #[derive(Deserialize)]
@@ -18,8 +25,14 @@ struct SpotifySuccessfulResponse {
     scope: String
 }
 
+#[tauri::command]
+async fn get_sorting_playlist(state: State<'_, Mutex<SessionState>>) -> Result<String, String> {
+    let state = state.lock().await;
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+    Ok(state.playlist_url)
+}
+
+
 // TODO: ...what is 'static?
 #[tauri::command]
 async fn retrieve_auth(state: State<'_, Mutex<SessionState>>, code_verifier: String, code: String) -> Result<String, String> {
@@ -73,14 +86,19 @@ async fn retrieve_auth(state: State<'_, Mutex<SessionState>>, code_verifier: Str
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let file = File::open("CONFIG.json")?;
+    let reader = BufReader::new(file);
+    let read_res: Value = serde_json::from_reader(reader)?;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         // TODO: how do we want to store tokens long term (refresh tokens, save to js file (that one's probably not safe))
         .manage(Mutex::new(SessionState {
             access_token: None,
-            refresh_token: None
+            refresh_token: None,
+            playlist_url: read_res["final_list_destination"]
         }))
-        .invoke_handler(tauri::generate_handler![retrieve_auth])
+        .invoke_handler(tauri::generate_handler![retrieve_auth, get_sorting_playlist])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
