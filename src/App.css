@@ -13,10 +13,16 @@
   width: 0px;
 } */
 
+html {
+  overscroll-behavior: none;
+  height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
   border: 0;
+  height: 100%;
   box-sizing: border-box;
 }
 
@@ -25,10 +31,10 @@ body {
   grid-template-areas:
     "header header"
     "tab tab";
-  grid-template-rows: auto 1fr;
-  grid-template-columns: 1fr 2fr;
   height: 100vh;
+  grid-template-rows: auto 1fr;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .header {
@@ -85,9 +91,11 @@ body {
 }
 
 .tab-area {
+  display: grid;
   grid-area: tab;
   background-color: rebeccapurple;
-  max-height: 100%
+  min-height: 0;
+  overflow: visible;
 }
 
 .hub {
@@ -95,25 +103,31 @@ body {
   grid-template-areas:
     "image player source"
     "unranked ranked text";
-  grid-template-rows: 1fr 2fr;
+  grid-template-rows: 1fr 1fr;
   grid-template-columns: 1fr 1fr 1fr;
-  max-height: 100%;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  align-items: stretch;
+  justify-items: stretch;
+  box-sizing: border-box;
 }
 
 .cover-display {
   grid-area: image;
   background-color: greenyellow;
-  max-height: 100%;
   max-width: 100%;
 }
 
-.cover-display-title {
+.section-title {
   position: absolute;
+  opacity: 0.4;
   padding: 0;
   margin: 0;
 }
 
 .cover-display-image {
+  display: block;
   max-width: 100%;
   max-height: 100%;
 }
@@ -121,34 +135,29 @@ body {
 .integrated-player {
   grid-area: player;
   background-color: green;
-  height: 100%;
   width: 100%;
 }
 
 .source-selector {
   grid-area: source;
   background-color: peru;
-  height: 100%;
   width: 100%;
 }
 
 .unranked-list {
   grid-area: unranked;
   background-color: bisque;
-  height: 100%;
   width: 100%;
 }
 
 .ranked-list {
   grid-area: ranked;
   background-color: orangered;
-  height: 100%;
   width: 100%;
 }
 
 .text-modifier {
   grid-area: text;
   background-color: white;
-  height: 100%;
   width: 100%;
 }
