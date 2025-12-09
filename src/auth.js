@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { call } from "./api.js"
 
 // PKCE auth
 // https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
@@ -87,22 +88,7 @@ export async function getProfile() {
     }
 
     // TODO: generalize this api handling
-    return await fetch('https://api.spotify.com/v1/me', {
-        headers: {
-        Authorization: 'Bearer ' + token
-        }
-    })
-    .then(response => {
-        if (response.status === 401) {
-            console.error('Authentication failed: 401 Unauthorized');
-            throw new Error('Unauthorized');
-        } else if (!response.ok) {
-            console.error(`HTTP error! Status: ${response.status}`);
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
+    return await call('/me', token).then(data => {
         return [data.display_name, data.images.url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"];
     })
     .catch(_ => {
