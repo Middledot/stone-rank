@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
-import { triggerLogin, triggerResponse, getProfile } from "./auth.jsx"
+import { triggerLogin, triggerResponse, getProfile } from "./auth.js"
 import "./App.css";
 
 function App() {
@@ -12,15 +12,39 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('Jo Doe');
   const [pfp, setPfp] = useState('https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
 
+  const [playlist, setPlaylist] = useState([]);
+
+  // useEffect(() => {
+  //   const check = async () => {
+  //     try {
+  //       // console.log("I got triggered!")
+  //       await triggerResponse()
+  //       let profile = await getProfile();
+  //       setIsLoggedIn(profile[0] !== 'Jo Doe');
+  //       setUsername(profile[0]);
+  //       setPfp(profile[1]);
+  //     } catch (err) {
+  //       console.log(err)
+  //       setError(err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   check();
+  // }, []);
+  
   useEffect(() => {
     const check = async () => {
       try {
         // console.log("I got triggered!")
         await triggerResponse()
         let profile = await getProfile();
+        setIsLoggedIn(profile[0] !== 'Jo Doe');
         setUsername(profile[0]);
         setPfp(profile[1]);
       } catch (err) {
@@ -59,30 +83,37 @@ function App() {
       <div className="tab-area">
         <div className="hub">
           <div className="cover-display">
-            <h2 className="cover-display-title">Album Cover</h2>
+            <h2 className="section-title">Album Cover</h2>
             <img
               className="cover-display-image"
               src={albumThumbSrc}
             />
           </div>
           <div className="integrated-player">
-            <h2 className="cover-display-title">Spotify Player</h2>
+            <h2 className="section-title">Spotify Player</h2>
           </div>
           <div className="source-selector">
-            <h2 className="cover-display-title">Player Picker</h2>
+            <h2 className="section-title">Player Picker</h2>
           </div>
           <div className="unranked-list">
-            <h2 className="cover-display-title">Unranked List</h2>
+            <h2 className="section-title">Unranked List</h2>
+            {isLoggedIn && 
+              <ul>
+                {["apples", "bananas"].map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            }
             {/* 
               TODO:
                - Reusable list interface
             */}
           </div>
           <div className="ranked-list">
-            <h2 className="cover-display-title">Ranked List</h2>
+            <h2 className="section-title">Ranked List</h2>
           </div>
           <div className="text-modifier">
-            <h2 className="cover-display-title">Comment Editor</h2>
+            <h2 className="section-title">Comment Editor</h2>
             {/* 
               TODO:
                - Text editor
