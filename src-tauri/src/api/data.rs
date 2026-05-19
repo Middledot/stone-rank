@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 pub struct ImageObjects {
@@ -15,6 +15,20 @@ pub struct GetProfileResponse {
     // href: String,
     pub id: String,
     pub images: Vec<ImageObjects>,
+    // external_urls: ExternalURLsResponse,
+    // followers: Option<FollowersResponse>,
+}
+
+
+
+// === Below here ===
+// are structs for responses from server -> backend
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Profile {
+    pub name: String,
+    pub pfp: String,
+    pub logged_in: bool
     // external_urls: ExternalURLsResponse,
     // followers: Option<FollowersResponse>,
 }

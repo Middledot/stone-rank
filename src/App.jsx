@@ -45,12 +45,14 @@ function App() {
         if (!window.requestedAuth) {
           window.requestedAuth = true;
           console.log("I got triggered!")
+
           await triggerResponse()
+
           let profile = await getProfile();
-          console.log(profile)
-          setIsLoggedIn(profile[0] !== 'Jo Doe');
-          setUsername(profile[0]);
-          setPfp(profile[1]);
+          console.log("[debug] profile retrieved: ", profile)
+          setIsLoggedIn(profile.logged_in);
+          setUsername(profile.name);
+          setPfp(profile.pfp);
         }
 
         // setPlaylist(await get_the_playlist())

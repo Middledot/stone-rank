@@ -86,37 +86,5 @@ export async function getPlaylistContents() {
 }
 
 export async function getProfile() {
-    // let token = localStorage.getItem('access_token');
-    // if (token == "undefined" || token == null) {
-    //     console.log("there be ghosts!")
-    //     return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
-    // }
-
-    return await invoke("api_get_profile").then(data => {
-        return data;
-    })
-
-    // try {
-    //     return await invoke("api_get_profile").then(data => {
-    //         return data;
-    //     })
-    //     // return await call('/me', token).then(data => {
-    //     //     return [data.display_name, data.images.url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"];
-    //     // })
-    // } catch (error) {
-    //     console.log("[debug] hi ", error)
-    //     // This catch block will handle network errors or errors explicitly thrown in the .then block
-    //     return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
-    // };
+    return await invoke("get_profile");
 }
-
-// .then(response => {
-//     //     if (response.status === 401) {
-//     //         console.error('Authentication failed: 401 Unauthorized');
-//     //         throw new Error('Unauthorized');
-//     //     } else if (!response.ok) {
-//     //         console.error(`HTTP error! Status: ${response.status}`);
-//     //         throw new Error(`HTTP error! Status: ${response.status}`);
-//     //     }
-//     //     return response.json();
-//     // })

@@ -6,7 +6,10 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 use reqwest::header::AUTHORIZATION;
-use super::data::GetProfileResponse;
+use super::data::{
+    GetProfileResponse,
+    Profile
+};
 use crate::state::SessionState;
 
 
@@ -50,60 +53,34 @@ async fn call(
 
 
 #[tauri::command]
-pub async fn api_get_profile(
+pub async fn get_profile(
     state: State<'_, Mutex<SessionState>>
-) -> Result<Vec<String>, String> {
+) -> Result<Profile, String> {
     let state = state.lock().await;
     // lesson: need to explicitly make references to not consume 'common property'
     // alternatives are .clone() (clone entirely for ownership) and .take() (to remove)
     let token = state.access_token.as_deref().unwrap_or("dud token");  // TODO: should raise if there isn't anything
 
     let res = call("/me", token).await;
-    let value: Vec<String> = match res {
+    let value: Profile = match res {
         Ok(resp) => {
             let unwrapped = resp.json::<GetProfileResponse>().await.expect("what now");
-            let mut ret = Vec::new();
-            ret.push(unwrapped.display_name.clone());
-            ret.push(unwrapped.images[0].url.clone());
+            let ret = Profile {
+                name: unwrapped.display_name.clone(),
+                pfp: unwrapped.images[0].url.clone(),
+                logged_in: true
+            };
             ret
         },
         Err(_) => {
-            let mut default = Vec::new();
-            default.push("Not Logged In (Jo Doe)".to_string());
-            default.push("https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg".to_string());
+            let default = Profile {
+                name: "Not Logged In (Jo Doe)".to_string(),
+                pfp: "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg".to_string(),
+                logged_in: false
+            };
             default
         }
     };
 
     Ok(value)
-
-
-    // let response = client.get("https://api.spotify.com/v1/me")
-    //     .header(AUTHORIZATION, format!("Bearer {}", token))
-    //     .send()
-    //     .await
-    //     .expect("error, ruh roh");
-
-    // println!("{:?}", response.text().await);
-    // println!("{:?}", response.json::<GetProfileResponse>().await);
-
-
-    // if body.is_err() {
-    //     println!("failed");
-    //     Err("err".to_string())
-    // } else {
-    //     // response is for sure successful, unwrap and save the contents
-    //     let response = body.unwrap();
-        
-
-    //     println!("access_token:\n{}", response.access_token);
-    //     println!("refresh_token:\n{}", response.refresh_token);
-
-    //     let mut state = state.lock().await;
-
-    //     state.access_token = Some(response.access_token);
-    //     state.refresh_token = Some(response.refresh_token);
-
-    //     Ok(state.access_token.clone().unwrap())
-    // }
 }

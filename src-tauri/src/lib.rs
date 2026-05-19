@@ -12,11 +12,11 @@ use serde_json::Value;
 use reqwest::header::AUTHORIZATION;
 
 use dotenvy::dotenv;
+use std::env;
 
 mod state;
 use state::SessionState;
 mod api;
-use api::calls::api_get_profile;
 
 
 #[derive(Deserialize)]
@@ -35,55 +35,6 @@ async fn get_sorting_playlist(state: State<'_, Mutex<SessionState>>) -> Result<S
     Ok(state.playlist_url.clone())
 }
 
-#[tauri::command]
-async fn fetch_req(
-    state: State<'_, Mutex<SessionState>>,
-    path: String,
-    data: Value
-) -> Result<String, String> {
-    // TODO: url encode, make more dynamic
-    // let client = reqwest::Client::new();
-
-    // let mut params = HashMap::new();
-    // params.insert("client_id", "1955f719fe774ba79cbd341538b409be");
-    // params.insert("grant_type", "authorization_code");
-    // params.insert("code", &code);
-    // params.insert("redirect_uri", "http://127.0.0.1:1420/");
-    // params.insert("code_verifier", &code_verifier);
-
-    // let response = client.post("https://accounts.spotify.com/api/token")
-    //     .form(&params)
-    //     .send()
-    //     .await
-    //     .expect("error");
-    // // println!("{:?}", &response);
-    // let body = response.json::<SpotifySuccessfulResponse>().await;
-    println!("{:?}", data);
-
-    Ok(String::from("Got it!"))
-
-    // if body.is_err() {
-    //     println!("failed");
-    //     Err("err".to_string())
-    // } else {
-    //     // response is for sure successful, unwrap and save the contents
-    //     let response = body.unwrap();
-        
-
-    //     println!("access_token:\n{}", response.access_token);
-    //     println!("refresh_token:\n{}", response.refresh_token);
-
-    //     let mut state = state.lock().await;
-
-    //     state.access_token = Some(response.access_token);
-    //     state.refresh_token = Some(response.refresh_token);
-
-    //     Ok(state.access_token.clone().unwrap())
-    // }
-}
-
-
-
 // TODO: ...what is 'static?
 #[tauri::command]
 async fn api_auth_response_login(state: State<'_, Mutex<SessionState>>, code_verifier: String, code: String) -> Result<String, String> {
@@ -94,11 +45,11 @@ async fn api_auth_response_login(state: State<'_, Mutex<SessionState>>, code_ver
         .expect("[environment variables] CLIENT_ID must be set");
 
     let mut params = HashMap::new();
-    params.insert("client_id", client_id.to_string());
-    params.insert("grant_type", "authorization_code");
-    params.insert("code", &code);
-    params.insert("redirect_uri", "http://127.0.0.1:1420/");
-    params.insert("code_verifier", &code_verifier);
+    params.insert("client_id", client_id);
+    params.insert("grant_type", "authorization_code".to_string());
+    params.insert("code", code);
+    params.insert("redirect_uri", "http://127.0.0.1:1420/".to_string());
+    params.insert("code_verifier", code_verifier);
 
     let response = client.post("https://accounts.spotify.com/api/token")
         .form(&params)
@@ -145,6 +96,7 @@ pub fn run() {
     let reader = BufReader::new(file);
     let read_res: Value = serde_json::from_reader(reader).expect("crap");
 
+    // TODO: this is most likely redundant
     dotenv().ok(); 
 
     tauri::Builder::default()
@@ -158,8 +110,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             api_auth_response_login,
             get_sorting_playlist,
-            api::calls::api_get_profile,
-            fetch_req,
+            api::calls::get_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
