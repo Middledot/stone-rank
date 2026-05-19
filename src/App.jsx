@@ -50,6 +50,7 @@ function App() {
 
           let profile = await getProfile();
           console.log("[debug] profile retrieved: ", profile)
+          localStorage.setItem("logged_on", profile.logged_in);
           setIsLoggedIn(profile.logged_in);
           setUsername(profile.name);
           setPfp(profile.pfp);

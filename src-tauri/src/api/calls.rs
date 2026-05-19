@@ -21,10 +21,10 @@ const ROOT_PATH: &str = "https://api.spotify.com/v1";
 
 
 // TODO:
-// 1. storing login keys
-// 2. getting new login keys through refresh token
-// 3. response structs
-// 4. make log-ins server side
+// 1. make log-ins server side
+// 2. storing login keys
+// 3. getting new login keys through refresh token
+// 4. response structs
 
 
 async fn call(

@@ -24,9 +24,6 @@ function base64encode(input) {
         .replace(/\//g, '_');
 }
 
-const CLIENT_ID = '1955f719fe774ba79cbd341538b409be';
-const redirectUri = 'http://127.0.0.1:1420/';
-
 export async function triggerLogin() {
     // Three functions above create 'codeVerifier'
     // then encode to send
@@ -36,21 +33,10 @@ export async function triggerLogin() {
 
     window.localStorage.setItem('code_verifier', codeVerifier);
 
-    const scope = 'playlist-read-private streaming';
-    const authUrl = new URL("https://accounts.spotify.com/authorize")
+    let authUrl = await invoke("init_login", {codeChallenge: codeChallenge});
 
-    const params =  {
-        response_type: 'code',
-        client_id: CLIENT_ID,
-        scope,
-        code_challenge_method: 'S256',
-        code_challenge: codeChallenge,
-        redirect_uri: redirectUri,
-    }
-
-    authUrl.search = new URLSearchParams(params).toString();
-    localStorage.removeItem("access_token");  // TODO: figure out long term token storage!!
-    window.location.href = authUrl.toString();
+    // localStorage.removeItem("access_token");  // TODO: figure out long term token storage!!
+    window.location.href = authUrl;
 }
 
 export async function triggerResponse() {
@@ -58,24 +44,20 @@ export async function triggerResponse() {
     let code = urlParams.get('code');
 
     if (code != null) {
-        // retrieve 'codeVerifier' from intial login
+        // retrieve 'codeVerifier' from init_login process
         const codeVerifier = localStorage.getItem('code_verifier');
         if (codeVerifier == null) {
             return;
         }
 
-        const value = await invoke("api_auth_response_login", {codeVerifier: codeVerifier, code: code})
+        const value = await invoke("finish_login", {codeVerifier: codeVerifier, code: code})
             .catch(error => {
                 console.log(error);
                 return Promise.resolve(error);
             });
         if (value !== "err") {
-            // console.log("tag, ur it,", value !== "err")
-            localStorage.setItem("logged_on", true);
-            // TODO: separate retrieve_access_token function?
+            // keeping this for now but all access should be done in backend
             localStorage.setItem("access_token", value);
-        } else {
-            localStorage.setItem("logged_on", false);
         }
     }
     localStorage.removeItem('code_verifier')
