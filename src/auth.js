@@ -24,8 +24,8 @@ function base64encode(input) {
         .replace(/\//g, '_');
 }
 
-const CLIENT_ID = '0c337be3f1164b81ac0fb432845ae93d';
-const redirectUri = 'http://127.0.0.1:1420';
+const CLIENT_ID = '1955f719fe774ba79cbd341538b409be';
+const redirectUri = 'http://127.0.0.1:1420/';
 
 export async function triggerLogin() {
     // Three functions above create 'codeVerifier'
@@ -64,7 +64,7 @@ export async function triggerResponse() {
             return;
         }
 
-        const value = await invoke("retrieve_auth", {codeVerifier: codeVerifier, code: code})
+        const value = await invoke("api_auth_response_login", {codeVerifier: codeVerifier, code: code})
             .catch(error => {
                 console.log(error);
                 return Promise.resolve(error);
@@ -81,18 +81,42 @@ export async function triggerResponse() {
     localStorage.removeItem('code_verifier')
 }
 
-export async function getProfile() {
-    let token = localStorage.getItem('access_token');
-    if (token == "undefined" || token == null) {
-        return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
-    }
-
-    // TODO: generalize this api handling
-    return await call('/me', token).then(data => {
-        return [data.display_name, data.images.url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"];
-    })
-    .catch(_ => {
-        // This catch block will handle network errors or errors explicitly thrown in the .then block
-        return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
-    });
+export async function getPlaylistContents() {
+    
 }
+
+export async function getProfile() {
+    // let token = localStorage.getItem('access_token');
+    // if (token == "undefined" || token == null) {
+    //     console.log("there be ghosts!")
+    //     return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
+    // }
+
+    return await invoke("api_get_profile").then(data => {
+        return data;
+    })
+
+    // try {
+    //     return await invoke("api_get_profile").then(data => {
+    //         return data;
+    //     })
+    //     // return await call('/me', token).then(data => {
+    //     //     return [data.display_name, data.images.url || "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"];
+    //     // })
+    // } catch (error) {
+    //     console.log("[debug] hi ", error)
+    //     // This catch block will handle network errors or errors explicitly thrown in the .then block
+    //     return ["Not Logged In (Jo Doe)", "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"]
+    // };
+}
+
+// .then(response => {
+//     //     if (response.status === 401) {
+//     //         console.error('Authentication failed: 401 Unauthorized');
+//     //         throw new Error('Unauthorized');
+//     //     } else if (!response.ok) {
+//     //         console.error(`HTTP error! Status: ${response.status}`);
+//     //         throw new Error(`HTTP error! Status: ${response.status}`);
+//     //     }
+//     //     return response.json();
+//     // })

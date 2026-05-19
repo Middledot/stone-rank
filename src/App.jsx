@@ -4,6 +4,7 @@ import { appDataDir } from "@tauri-apps/api/path";
 
 import { triggerLogin, triggerResponse, getProfile } from "./auth.js"
 import "./App.css";
+import TextEditor from "./TextEditor.jsx"
 
 function App() {
   // let fileUrl = convertFileSrc(appDataDir()+"/excursions.jpg")
@@ -41,12 +42,18 @@ function App() {
   useEffect(() => {
     const check = async () => {
       try {
-        // console.log("I got triggered!")
-        await triggerResponse()
-        let profile = await getProfile();
-        setIsLoggedIn(profile[0] !== 'Jo Doe');
-        setUsername(profile[0]);
-        setPfp(profile[1]);
+        if (!window.requestedAuth) {
+          window.requestedAuth = true;
+          console.log("I got triggered!")
+          await triggerResponse()
+          let profile = await getProfile();
+          console.log(profile)
+          setIsLoggedIn(profile[0] !== 'Jo Doe');
+          setUsername(profile[0]);
+          setPfp(profile[1]);
+        }
+
+        // setPlaylist(await get_the_playlist())
       } catch (err) {
         console.log(err)
         setError(err);
@@ -111,13 +118,13 @@ function App() {
           </div>
           <div className="ranked-list">
             <h2 className="section-title">Ranked List</h2>
+            <ul>
+              {/*{objects.map((object, i) => <li key={i}>{object}</li>)}*/}
+            </ul>
           </div>
           <div className="text-modifier">
             <h2 className="section-title">Comment Editor</h2>
-            {/* 
-              TODO:
-               - Text editor
-            */}
+            <TextEditor />
           </div>
         </div>
       </div>

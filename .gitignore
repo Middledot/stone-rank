@@ -1,6 +1,8 @@
 # App
 downloads
 CONFIG.json
+.env
+test.txt
 
 # Logs
 logs
