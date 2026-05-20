@@ -4,10 +4,8 @@ use serde::{Deserialize, Serialize};
 pub struct ImageObjects {
     pub height: i32,
     pub width: i32,
-    pub url: String
+    pub url: String,
 }
-
-
 
 #[derive(Deserialize, Debug)]
 pub struct GetProfileResponse {
@@ -25,10 +23,8 @@ pub struct SpotifySuccessfulResponse {
     pub token_type: String,
     pub expires_in: i32,
     pub refresh_token: String,
-    pub scope: String
+    pub scope: String,
 }
-
-
 
 // === Below here ===
 // are structs for responses from server -> backend
@@ -37,12 +33,9 @@ pub struct SpotifySuccessfulResponse {
 pub struct Profile {
     pub name: String,
     pub pfp: String,
-    pub logged_in: bool
-    // external_urls: ExternalURLsResponse,
-    // followers: Option<FollowersResponse>,
+    pub logged_in: bool, // external_urls: ExternalURLsResponse,
+                         // followers: Option<FollowersResponse>,
 }
-
-
 
 // #[derive(Deserialize)]
 // struct ExternalURLsResponse {
@@ -54,4 +47,3 @@ pub struct Profile {
 //     href: Option<String>,
 //     total: i32
 // }
-
