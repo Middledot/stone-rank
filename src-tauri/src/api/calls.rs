@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-use tauri::Manager;
 use tauri::State;
 use tokio::sync::Mutex;
 
 use super::data::{GetProfileResponse, Profile};
 use crate::state::SessionState;
 use reqwest::header::AUTHORIZATION;
-use serde_json::Value;
 
 // pub enum Response {
 
@@ -46,6 +43,7 @@ pub async fn get_profile(state: State<'_, Mutex<SessionState>>) -> Result<Profil
     let state = state.lock().await;
     // lesson: need to explicitly make references to not consume 'common property'
     // alternatives are .clone() (clone entirely for ownership) and .take() (to remove)
+    println!("{:?}", &state);
     let token = state.access_token.as_deref().unwrap_or("dud token"); // TODO: should raise if there isn't anything
 
     let res = call("/me", token).await;

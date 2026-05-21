@@ -27,4 +27,4 @@ reqwest = { version = "0.13.3", features = ["json", "form"] }
 dotenvy = "0.15.7"
 url = "2.5.8"
 tauri-plugin-store = "2"
-
+tauri-plugin-oauth = "2"

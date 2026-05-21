@@ -1,10 +1,13 @@
 use std::collections::HashMap;
-use tauri::Manager;
-use tauri::State;
+use tauri::{State, Window, Emitter};
+use serde_json::{json};
 use tokio::sync::Mutex;
 
 use std::env;
 use url::Url;
+
+use tauri_plugin_store::StoreExt;  // needed to access store
+use tauri_plugin_oauth::{OauthConfig, start_with_config};
 
 use super::data::{GetProfileResponse, Profile, SpotifySuccessfulResponse};
 
@@ -12,7 +15,7 @@ use crate::state::SessionState;
 
 #[tauri::command]
 pub async fn init_login(
-    state: State<'_, Mutex<SessionState>>,
+    _state: State<'_, Mutex<SessionState>>,
     code_challenge: String,
 ) -> Result<String, String> {
     let mut url = Url::parse("https://accounts.spotify.com/authorize").unwrap();
@@ -34,8 +37,50 @@ pub async fn init_login(
     // const scope = 'playlist-read-private streaming';
 }
 
+fn verify(url: &str) -> Option<String> {
+    let url = Url::parse(url).ok()?;
+    if url.path() != "/" {
+        println!("this line was triggered");
+        return None;
+    }
+
+    let mut code = None;
+    // let mut ok = false;
+    for (k, v) in url.query_pairs() {
+        // reference a dereferenced var?? I'm not sure what this is lmao
+        match &*k {
+            "code"  => code = Some(v.into_owned()),
+            _ => {}
+        }
+    }
+    // I omitted the state checking since spotify doesn't implement it
+    // ... there must be another way to validate it?
+    code
+}
+
+#[tauri::command]
+pub async fn start_server(window: Window) -> Result<u16, String> {
+    // thank you Joshua
+    // https://medium.com/@Joshua_50036/implementing-oauth-in-tauri-3c12c3375e04
+
+    let cfg = OauthConfig {
+        ports: Some(vec![1420]),     // Multiple ports to avoid conflicts
+        response: Some("OAuth finished. You may close this tab.".into()),
+    };
+
+    start_with_config(cfg, move |url| {
+        // Because of the unprotected localhost port, you must verify the URL here.
+        // Preferebly send back only the token, or nothing at all if you can handle everything else in Rust.
+        if let Some(code) = verify(&url) {
+            let _ = window.emit("redirect_uri", code);
+        }
+    })
+        .map_err(|err| err.to_string())
+}
+
 #[tauri::command]
 pub async fn finish_login(
+    app: tauri::AppHandle,
     state: State<'_, Mutex<SessionState>>,
     code_verifier: String,
     code: String,
@@ -66,9 +111,16 @@ pub async fn finish_login(
     } else {
         // response is for sure successful, unwrap and save the contents
         let response = body.unwrap();
-
         println!("access_token:\n{}", response.access_token);
         println!("refresh_token:\n{}", response.refresh_token);
+
+        let store = app.store("store.json").unwrap();
+        // let access_token: Option<String>;
+        // let refresh_token: Option<String>;
+        store.set("access_token", json!(response.access_token.clone()));
+        store.set("refresh_token", json!(response.refresh_token.clone()));
+
+        let _ = store.save();
 
         let mut state = state.lock().await;
 

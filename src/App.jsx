@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
-import { triggerLogin, triggerResponse, getProfile } from "./auth.js"
+import { triggerLogin, getProfile } from "./auth.js"
 import "./App.css";
 import TextEditor from "./TextEditor.jsx"
 
@@ -19,26 +19,6 @@ function App() {
 
   const [playlist, setPlaylist] = useState([]);
 
-  // useEffect(() => {
-  //   const check = async () => {
-  //     try {
-  //       // console.log("I got triggered!")
-  //       await triggerResponse()
-  //       let profile = await getProfile();
-  //       setIsLoggedIn(profile[0] !== 'Jo Doe');
-  //       setUsername(profile[0]);
-  //       setPfp(profile[1]);
-  //     } catch (err) {
-  //       console.log(err)
-  //       setError(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   check();
-  // }, []);
-  
   useEffect(() => {
     const check = async () => {
       try {
@@ -46,7 +26,7 @@ function App() {
           window.requestedAuth = true;
           console.log("I got triggered!")
 
-          await triggerResponse()
+          // await triggerResponse()
 
           let profile = await getProfile();
           console.log("[debug] profile retrieved: ", profile)
