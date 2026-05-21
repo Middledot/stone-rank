@@ -39,41 +39,13 @@ export async function triggerLogin() {
 
     // https://medium.com/@Joshua_50036/implementing-oauth-in-tauri-3c12c3375e04
 
-    // const state = randomState();
-    const port = await invoke("start_server");
+    const port = await invoke("start_response_server");
 
-    const stop = await listen("redirect_uri", async ({ payload }) => {
-        stop();  // stop listening after receiving the event
-        const token = await invoke("finish_login", {
-            codeVerifier: codeVerifier,
-            code: payload,
-        });
-
-        localStorage.setItem("access_token", token);
-        localStorage.removeItem('code_verifier')
-
-        // const win = WebviewWindow.getByLabel('spotify-auth')
-        const windows = await getAllWebviewWindows();
-        const target = windows.find((w) => w.label === 'spotify-auth');
-        await target?.close();
-        window.location.reload();
-    });
-
-    // const redirect = `http://localhost:${port}/`;
-    // const url = "https://github.com/login/oauth/authorize?" +
-    // new URLSearchParams({
-    //     client_id: CLIENT_ID,
-    //     redirect_uri: redirect,
-    //     scope: "repo read:org",
-    //     state,
-    // });
+    const stop = await listen("redirect_uri", triggerResponse);
 
     await open(authUrl);
 
-
-    // localStorage.removeItem("access_token");  // TODO: figure out long term token storage!!
-    // window.location.href = authUrl;
-    const authWindow = new WebviewWindow('spotify-auth', {
+    const _authWindow = new WebviewWindow('spotify-auth', {
         url: authUrl,
         title: 'Login with Spotify',
         width: 500,
@@ -84,29 +56,23 @@ export async function triggerLogin() {
     })
 }
 
-// export async function triggerResponse() {
-//     const urlParams = new URLSearchParams(window.location.search);
-//     let code = urlParams.get('code');
+async function triggerResponse(payload) {
+    stop();  // stop listening after receiving the event
+    const token = await invoke("finish_login", {
+        codeVerifier: codeVerifier,
+        code: payload,
+    });
 
-//     if (code != null) {
-//         // retrieve 'codeVerifier' from init_login process
-//         const codeVerifier = localStorage.getItem('code_verifier');
-//         if (codeVerifier == null) {
-//             return;
-//         }
+    localStorage.setItem("access_token", token);
+    localStorage.removeItem('code_verifier')
 
-//         const value = await invoke("finish_login", {codeVerifier: codeVerifier, code: code})
-//             .catch(error => {
-//                 console.log(error);
-//                 return Promise.resolve(error);
-//             });
-//         if (value !== "err") {
-//             // keeping this for now but all access should be done in backend
-//             localStorage.setItem("access_token", value);
-//         }
-//     }
-//     localStorage.removeItem('code_verifier')
-// }
+    // TODO: why don't this work :(
+    // const win = WebviewWindow.getByLabel('spotify-auth')
+    const windows = await getAllWebviewWindows();
+    const target = windows.find((w) => w.label === 'spotify-auth');
+    await target?.close();
+    window.location.reload();
+}
 
 export async function getPlaylistContents() {
     

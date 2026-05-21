@@ -22,20 +22,13 @@ function App() {
   useEffect(() => {
     const check = async () => {
       try {
-        if (!window.requestedAuth) {
-          window.requestedAuth = true;
-          console.log("I got triggered!")
-
-          // await triggerResponse()
-
-          let profile = await getProfile();
-          console.log("[debug] profile retrieved: ", profile)
-          localStorage.setItem("logged_on", profile.logged_in);
-          setIsLoggedIn(profile.logged_in);
-          setUsername(profile.name);
-          setPfp(profile.pfp);
-        }
-
+        // TODO: is a window.requestedAuth attr needed?
+        let profile = await getProfile();
+        console.log("[debug] profile retrieved: ", profile)
+        localStorage.setItem("logged_on", profile.logged_in);
+        setIsLoggedIn(profile.logged_in);
+        setUsername(profile.name);
+        setPfp(profile.pfp);
         // setPlaylist(await get_the_playlist())
       } catch (err) {
         console.log(err)

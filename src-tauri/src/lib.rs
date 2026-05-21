@@ -15,6 +15,7 @@ mod state;
 use state::SessionState;
 mod api;
 
+
 #[tauri::command]
 async fn get_sorting_playlist(state: State<'_, Mutex<SessionState>>) -> Result<String, String> {
     let state = state.lock().await;
@@ -22,12 +23,6 @@ async fn get_sorting_playlist(state: State<'_, Mutex<SessionState>>) -> Result<S
     Ok(state.playlist_url.clone())
 }
 
-// #[tauri::command]
-// async fn get_login_info(state: State<'_, Mutex<SessionState>>) -> Result<String, String> {
-//     // duh duh duh
-//     let client = reqwest::Client::new();
-//     Ok("Not Logged In")
-// }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -85,7 +80,7 @@ pub fn run() {
             api::calls::get_profile,
             api::login::init_login,
             api::login::finish_login,
-            api::login::start_server,
+            api::login::start_response_server,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

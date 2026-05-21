@@ -12,8 +12,7 @@ use reqwest::header::AUTHORIZATION;
 const ROOT_PATH: &str = "https://api.spotify.com/v1";
 
 // TODO:
-// 1. make log-ins server side
-// 2. storing login keys
+// 2. storing login keys (DONE but make more secure)
 // 3. getting new login keys through refresh token
 // 4. response structs
 

@@ -38,14 +38,17 @@ pub async fn init_login(
 }
 
 fn verify(url: &str) -> Option<String> {
+    // TODO: this isn't really verifying the url, just extracting the
+    // code... find way to verify
     let url = Url::parse(url).ok()?;
     if url.path() != "/" {
+        // all this really does that spotify doesn't is block one of the
+        // registered redirect uris :P
         println!("this line was triggered");
         return None;
     }
 
     let mut code = None;
-    // let mut ok = false;
     for (k, v) in url.query_pairs() {
         // reference a dereferenced var?? I'm not sure what this is lmao
         match &*k {
@@ -59,7 +62,7 @@ fn verify(url: &str) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn start_server(window: Window) -> Result<u16, String> {
+pub async fn start_response_server(window: Window) -> Result<u16, String> {
     // thank you Joshua
     // https://medium.com/@Joshua_50036/implementing-oauth-in-tauri-3c12c3375e04
 
@@ -69,13 +72,10 @@ pub async fn start_server(window: Window) -> Result<u16, String> {
     };
 
     start_with_config(cfg, move |url| {
-        // Because of the unprotected localhost port, you must verify the URL here.
-        // Preferebly send back only the token, or nothing at all if you can handle everything else in Rust.
         if let Some(code) = verify(&url) {
-            let _ = window.emit("redirect_uri", code);
+            let _ = window.emit("code", code);
         }
-    })
-        .map_err(|err| err.to_string())
+    }).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
