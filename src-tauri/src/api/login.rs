@@ -31,7 +31,7 @@ pub async fn init_login(
         .append_pair("code_challenge", &code_challenge)
         .append_pair("redirect_uri", REDIRECT_URI);
 
-    println!("{}", url.as_str().to_string());
+    // println!("{}", url.as_str().to_string());
     Ok(url.as_str().to_string())
     // println!("{}", url.as_str());
     // const scope = 'playlist-read-private streaming';
@@ -113,6 +113,9 @@ pub async fn finish_login(
         let response = body.unwrap();
         println!("access_token:\n{}", response.access_token);
         println!("refresh_token:\n{}", response.refresh_token);
+        println!("token_type:\n{}", response.token_type);
+        println!("scope:\n{}", response.scope);
+        println!("expires_in:\n{}", response.expires_in);
 
         let store = app.store("store.json").unwrap();
         // let access_token: Option<String>;
@@ -130,3 +133,35 @@ pub async fn finish_login(
         Ok(state.access_token.clone().unwrap())
     }
 }
+
+
+pub async fn refresh_tokens(retoken: String) -> Result<(String, String), ()> {
+    let client = reqwest::Client::new();
+
+    let client_id = env::var("CLIENT_ID").expect("[environment variables] CLIENT_ID must be set");
+
+    let mut params = HashMap::new();
+    params.insert("client_id", client_id);
+    params.insert("grant_type", "refresh_token".to_string());
+    params.insert("refresh_token", retoken);
+
+    let response = client
+        .post("https://accounts.spotify.com/api/token")
+        .form(&params)
+        .send()
+        .await
+        .expect("error");
+
+    let status = (response.status().as_u16()) as i16;;
+    let bytes = response.bytes().await.unwrap(); // new solution for debug
+
+    if status >= 400 {
+        println!("retokening failed");
+        println!("{:?}", String::from_utf8_lossy(&bytes).into_owned());
+        Err(())
+    } else {
+        let body: SpotifySuccessfulResponse = serde_json::from_slice(&bytes).unwrap();
+        Ok((body.access_token.clone(), body.refresh_token.clone()))
+    }
+}
+

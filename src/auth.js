@@ -39,11 +39,13 @@ export async function triggerLogin() {
 
     // https://medium.com/@Joshua_50036/implementing-oauth-in-tauri-3c12c3375e04
 
+    // it's only ever the one port anyway..... for now
     const port = await invoke("start_response_server");
 
-    const stop = await listen("redirect_uri", triggerResponse);
+    const stop = await listen("code", triggerResponse);
 
     await open(authUrl);
+    console.log(authUrl);
 
     const _authWindow = new WebviewWindow('spotify-auth', {
         url: authUrl,
@@ -57,10 +59,13 @@ export async function triggerLogin() {
 }
 
 async function triggerResponse(payload) {
+    let codeVerifier = localStorage.getItem('code_verifier')
+
     stop();  // stop listening after receiving the event
+
     const token = await invoke("finish_login", {
         codeVerifier: codeVerifier,
-        code: payload,
+        code: payload.payload,  // beautiful
     });
 
     localStorage.setItem("access_token", token);
