@@ -75,9 +75,9 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // api_auth_response_login,
             get_sorting_playlist,
             api::calls::get_profile,
+            api::calls::get_playlist_items,
             api::login::init_login,
             api::login::finish_login,
             api::login::start_response_server,

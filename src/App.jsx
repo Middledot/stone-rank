@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
-import { triggerLogin, getProfile } from "./auth.js"
+import { triggerLogin, getProfile, getPlaylistContents } from "./auth.js"
 import "./App.css";
 import TextEditor from "./TextEditor.jsx"
 
@@ -29,6 +29,10 @@ function App() {
         setIsLoggedIn(profile.logged_in);
         setUsername(profile.name);
         setPfp(profile.pfp);
+
+        if (profile.logged_in) {
+          await getPlaylistContents();
+        }
         // setPlaylist(await get_the_playlist())
       } catch (err) {
         console.log(err)

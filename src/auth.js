@@ -80,7 +80,7 @@ async function triggerResponse(payload) {
 }
 
 export async function getPlaylistContents() {
-    
+    return await invoke("get_playlist_items");
 }
 
 export async function getProfile() {

@@ -17,6 +17,36 @@ pub struct GetProfileResponse {
     // followers: Option<FollowersResponse>,
 }
 
+
+#[derive(Deserialize, Debug)]
+pub struct GetPlaylistItemsResponse {
+    pub limit: i32,
+    pub offset: i32,
+    pub items: Vec<SuperItem>
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SuperItem {
+    pub item: Item,
+    pub album: Album,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Item {
+    pub id: String,
+    pub href: String,
+    pub name: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Album {
+    pub id: String,
+    pub href: String,
+    pub name: String,
+    pub images: Vec<ImageObjects>,
+}
+
+
 #[derive(Deserialize)]
 pub struct SpotifySuccessfulResponse {
     pub access_token: String,

@@ -136,6 +136,7 @@ pub async fn finish_login(
 
 
 pub async fn refresh_tokens(retoken: String) -> Result<(String, String), ()> {
+    println!("Retokening...");
     let client = reqwest::Client::new();
 
     let client_id = env::var("CLIENT_ID").expect("[environment variables] CLIENT_ID must be set");
@@ -152,7 +153,7 @@ pub async fn refresh_tokens(retoken: String) -> Result<(String, String), ()> {
         .await
         .expect("error");
 
-    let status = (response.status().as_u16()) as i16;;
+    let status = (response.status().as_u16()) as i16;
     let bytes = response.bytes().await.unwrap(); // new solution for debug
 
     if status >= 400 {
