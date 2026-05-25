@@ -31,7 +31,8 @@ function App() {
         setPfp(profile.pfp);
 
         if (profile.logged_in) {
-          await getPlaylistContents();
+          let conts = await getPlaylistContents();
+          console.log(conts);
         }
         // setPlaylist(await get_the_playlist())
       } catch (err) {

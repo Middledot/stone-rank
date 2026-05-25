@@ -13,6 +13,22 @@ pub struct Error {
 }
 
 
+#[derive(Serialize, Debug)]
+pub struct PlaylistPage {
+    pub limit: i32,
+    pub offset: i32,
+    pub items: Vec<PlaylistItem>
+}
+
+
+#[derive(Serialize, Debug)]
+pub struct PlaylistItem {
+    pub title: String,
+    pub href: String,
+    pub icon: String
+}
+
+
 #[derive(Deserialize, Debug)]
 pub struct ImageObjects {
     pub height: i32,

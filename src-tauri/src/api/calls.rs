@@ -10,7 +10,9 @@ use tauri_plugin_store::StoreExt;  // needed to access store
 use super::data::{
     GetProfileResponse,
     Profile,
-    GetPlaylistItemsResponse
+    GetPlaylistItemsResponse,
+    PlaylistItem,
+    PlaylistPage
 };
 use super::login::refresh_tokens;
 use crate::api::data::ApiError;
@@ -138,7 +140,7 @@ pub async fn get_profile(app: tauri::AppHandle, state: State<'_, Mutex<SessionSt
 
 // TODO: how to access store without app handle?
 #[tauri::command]
-pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<SessionState>>) -> Result<String, String> {
+pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<SessionState>>) -> Result<PlaylistPage, String> {
     let mut state = state.lock().await;
 
     let pl_code = env::var("PLAYLIST_CODE").expect("[environment variables] PLAYLIST_CODE must be set");
@@ -146,23 +148,27 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
     let mut params = HashMap::new();
     params.insert("fields", "items(track(name,href,album(name,href,image)))".to_string());
     // params.insert("grant_type", "refresh_token".to_string());
-    params.insert("limit", "50".to_string());
+    params.insert("limit", "5".to_string());
 
     let res = call_with_state(&app, &mut state, format!("/playlists/{}/items", pl_code).as_str(), None).await; // Some(params)
-    // let value: Profile = 
-    match res {
+    let t = match res {
         Ok(resp) => {
-            println!("{:?}", resp);
-            let bb = resp.bytes().await.unwrap();
-            println!("{:?}", std::str::from_utf8(&bb));
-            // let unwrapped = resp.json::<GetPlaylistItemsResponse>().await.expect("playlist retrieval failed");
-            // println!("{:?}", unwrapped.items[0]);
-            // let ret = Profile {
-            //     name: unwrapped.display_name.clone(),
-            //     pfp: unwrapped.images[0].url.clone(),
-            //     logged_in: true,
-            // };
-            // ret
+            // println!("{:?}", resp);
+            // let bb = resp.bytes().await.unwrap();
+            // println!("{:?}", std::str::from_utf8(&bb));
+            let unwrapped = resp.json::<GetPlaylistItemsResponse>().await.expect("playlist retrieval failed");
+            let listing = PlaylistPage {
+                limit: unwrapped.limit,
+                offset: unwrapped.offset,
+                items: unwrapped.items.iter().map(|i| {
+                    PlaylistItem {
+                        title: i.item.name.clone(),
+                        href: i.item.href.clone(),
+                        icon: i.item.album.images[0].url.clone()
+                    }
+                }).collect()
+            };
+            Ok(listing)
         }
         Err(_) => {
             // let default = Profile {
@@ -172,10 +178,10 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
             //     logged_in: false,
             // };
             println!("TWINJEMIN");
-            // default
+            Err("dude".to_string())
         }
     };
 
-    Ok("hey sexy boy".to_string())
+    t
 }
 
