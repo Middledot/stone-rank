@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::env;
+use bytes::Bytes;
 
 use tauri::State;
 use tokio::sync::{Mutex, MutexGuard};
@@ -12,6 +13,7 @@ use super::data::{
     GetPlaylistItemsResponse
 };
 use super::login::refresh_tokens;
+use crate::api::data::ApiError;
 use crate::state::SessionState;
 use reqwest::header::AUTHORIZATION;
 
@@ -61,33 +63,44 @@ async fn call_with_state(app: &tauri::AppHandle, state: &mut MutexGuard<'_, Sess
     }
 
     println!("{:?}", url.clone());
-    println!("{:?}", params.clone());
 
     let mut response = call(url.clone(), token.clone(), params.clone()).await;
-    let status = (response.status().as_u16()) as i16;
+    let mut headers = response.headers();
+    let mut status = (response.status().as_u16()) as i16;
 
-    if status == 400 {  // || true {  // this is to force a token refresh
-        let (new_token, new_retoken) = refresh_tokens(retoken.to_string()).await.expect("kablooey");
+    // this part is for retokening/token refresh
+    if status == 401 && let Some(check) = headers.get("www-authenticate") {
+        let er = check.to_str().expect("error failed to deserialize, exiting");
 
-        // comment this out for testing
-        let store = app.store("store.json").unwrap();
-        store.set("access_token", json!(new_token.clone()));
-        store.set("refresh_token", json!(new_retoken.clone()));
+        // magic string
+        if er == "Bearer realm=\"spotify\", error=\"invalid_token\", error_description=\"The access token expired\"" {
+            let (new_token, new_retoken) = refresh_tokens(retoken.to_string()).await.expect("Retokening failed somehow");
 
-        let _ = store.save();
+            // comment this out for testing
+            let store = app.store("store.json").unwrap();
+            store.set("access_token", json!(new_token.clone()));
+            store.set("refresh_token", json!(new_retoken.clone()));
 
-        state.access_token = Some(new_token);
-        state.refresh_token = Some(new_retoken);
+            let _ = store.save();
 
-        response = call(url.clone(), token.clone(), params.clone()).await;  // I can use it here!! cuz it propogates to the upper functions Result response!!!!!
+            state.access_token = Some(new_token);
+            state.refresh_token = Some(new_retoken);
+
+            response = call(url.clone(), token.clone(), params.clone()).await;  // I can use it here!! cuz it propogates to the upper functions Result response!!!!!
+            headers = response.headers();
+            status = (response.status().as_u16()) as i16;
+        }
     }
     // separate branches so refresh can only happen max once per request
 
     if status > 400 {
+        println!("!! UNCATEGORIZED ERROR !!");
+        println!("{:?}", &response);
         println!("{}", status);
+        // println!("{}", std::str::from_utf8(&resp_bytes).expect("unformattable :("));
         Err(())
     } else {
-        Ok(response)
+        Ok(response)  // (resp_bytes, status)
     }
 }
 

@@ -3,7 +3,7 @@ name = "stone-rank"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,3 +28,4 @@ dotenvy = "0.15.7"
 url = "2.5.8"
 tauri-plugin-store = "2"
 tauri-plugin-oauth = "2"
+bytes = "1.11.1"

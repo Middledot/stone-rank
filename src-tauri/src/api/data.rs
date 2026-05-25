@@ -1,5 +1,18 @@
 use serde::{Deserialize, Serialize};
 
+
+#[derive(Deserialize, Debug)]
+pub struct ApiError {
+    pub inner: Error,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Error {
+    pub status: i32,
+    pub message: String
+}
+
+
 #[derive(Deserialize, Debug)]
 pub struct ImageObjects {
     pub height: i32,
@@ -17,7 +30,7 @@ pub struct GetProfileResponse {
     // followers: Option<FollowersResponse>,
 }
 
-
+// track(name,href,album(name,href,image))
 #[derive(Deserialize, Debug)]
 pub struct GetPlaylistItemsResponse {
     pub limit: i32,
@@ -28,7 +41,6 @@ pub struct GetPlaylistItemsResponse {
 #[derive(Deserialize, Debug)]
 pub struct SuperItem {
     pub item: Item,
-    pub album: Album,
 }
 
 #[derive(Deserialize, Debug)]
@@ -36,6 +48,7 @@ pub struct Item {
     pub id: String,
     pub href: String,
     pub name: String,
+    pub album: Album,
 }
 
 #[derive(Deserialize, Debug)]
