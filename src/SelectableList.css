@@ -1,0 +1,41 @@
+.selectable-list {
+  list-style-type: none;
+  list-style-position: outside;
+  padding: 0;
+  margin: 5px;
+  text-align: left;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  width: auto;
+}
+
+.selectable-list-entry {
+  padding: 0;
+  font-size: 10px;
+  cursor: pointer;
+  margin: 2px 0;
+  display: flex;
+  flex-direction: row;
+  height: auto;
+}
+
+.selectable-list-entry .index {
+  padding: 5px;
+}
+.selectable-list-entry .disp {
+  text-overflow: clip;
+  padding: 5px;
+}
+
+.selectable-list-entry.selected {
+  background-color: dodgerblue!important;
+  color: white!important;
+  border-color: #0056b3!important;
+}
+
+.selectable-list-entry.multi-selected {
+  background-color: dodgerblue!important;
+  color: white!important;
+  border-color: #0056b3!important;
+}

@@ -5,10 +5,14 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { triggerLogin, getProfile, getPlaylistContents } from "./auth.js"
 import "./App.css";
 import TextEditor from "./TextEditor.jsx"
+import SelectableList from "./SelectableList.jsx";
 
 function App() {
-  // let fileUrl = convertFileSrc(appDataDir()+"/excursions.jpg")
-  const [albumThumbSrc, setAlbumThumbSrc] = useState("https://f4.bcbits.com/img/a0401863863_16.jpg")
+  // https://f4.bcbits.com/img/a0401863863_16.jpg
+  const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
+
+  const [selectedTrack, setSelectedTrack] = useState("");
+  const [multiItem, setMultiItem] = useState([]);  // dud for now
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,7 +21,23 @@ function App() {
   const [username, setUsername] = useState('Jo Doe');
   const [pfp, setPfp] = useState('https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
 
-  const [playlist, setPlaylist] = useState([]);
+  const [playlistPage, setPlaylistPage] = useState(null);
+
+  function selectedEntry(newId) {
+    if (playlistPage != null) {
+      setSelectedTrack(newId)
+      for (const entry of playlistPage.items) {
+        if (entry.id == newId) {
+          setAlbumThumbSrc(entry.icon);
+          console.log("yeah it works");
+          return
+        }
+        console.log(entry)
+        console.log(newId)
+      }
+      setAlbumThumbSrc(null);
+    }
+  }
 
   useEffect(() => {
     const check = async () => {
@@ -29,11 +49,6 @@ function App() {
         setIsLoggedIn(profile.logged_in);
         setUsername(profile.name);
         setPfp(profile.pfp);
-
-        if (profile.logged_in) {
-          let conts = await getPlaylistContents();
-          console.log(conts);
-        }
         // setPlaylist(await get_the_playlist())
       } catch (err) {
         console.log(err)
@@ -46,8 +61,36 @@ function App() {
     check();
   }, []);
 
+  useEffect(() => {
+    const check = async () => {
+      if (isLoggedIn) {
+        let conts = await getPlaylistContents(0, 20);
+        setPlaylistPage(conts);
+      }
+    };
+
+    check();
+  }, [isLoggedIn]);
+
+
   if (loading) return <p>Loading data...</p>;
   if (error) return <p>Error?: {error.message} {error}</p>;
+
+  console.log(playlistPage);
+  let listing = [];
+  if (playlistPage) {
+    listing = playlistPage.items.map((entry, index) => {
+      const item = {
+        index: playlistPage.offset + index + 1,
+        id: entry.id,
+        display: entry.title
+      }
+      return item
+    })
+    console.log(playlistPage.offset);
+    console.log(playlistPage.limit);
+  }
+
 
   return (
     <main className="higher-power">
@@ -70,39 +113,44 @@ function App() {
 
       <div className="tab-area">
         <div className="hub">
-          <div className="cover-display">
+          {/* <div className="cover-display">
             <h2 className="section-title">Album Cover</h2>
+            {albumThumbSrc !== null ?
             <img
               className="cover-display-image"
               src={albumThumbSrc}
             />
-          </div>
-          <div className="integrated-player">
-            <h2 className="section-title">Spotify Player</h2>
-          </div>
-          <div className="source-selector">
-            <h2 className="section-title">Player Picker</h2>
-          </div>
-          <div className="unranked-list">
-            <h2 className="section-title">Unranked List</h2>
-            {isLoggedIn && 
-              <ul>
-                {["apples", "bananas"].map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ul>
+            :
+            <p>No song selected</p>
             }
-            {/* 
-              TODO:
-               - Reusable list interface
-            */}
+          </div> */}
+          <div className="integrated-player">
+            {/* <h2 className="section-title">Spotify Player</h2> */}
+            {/* <button id="togglePlay" onClick={onPlayToggle}>Toggle Play</button> */}
+            <iframe style={{border: "none"}} src={`https://open.spotify.com/embed/track/${selectedTrack}?utm_source=generator`} width="100%" height="100%" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
           </div>
-          <div className="ranked-list">
+          {/* <div className="source-selector">
+            <h2 className="section-title">Player Picker</h2>
+          </div> */}
+          <div className="unranked-list">
+            {/* <h2 className="section-title">Unranked List</h2> */}
+            {isLoggedIn && playlistPage && 
+              <div className="list-container">
+                <SelectableList
+                  id="track-selector-from-playlist"
+                  select={selectedTrack}
+                  setSelect={selectedEntry}
+                  multiSelect={multiItem}
+                  setMultiSelect={setMultiItem}
+                  items={listing}
+                />
+              </div>
+            }
+          </div>
+          {/* <div className="ranked-list">
             <h2 className="section-title">Ranked List</h2>
-            <ul>
-              {/*{objects.map((object, i) => <li key={i}>{object}</li>)}*/}
-            </ul>
-          </div>
+            <ul></ul>
+          </div> */}
           <div className="text-modifier">
             <h2 className="section-title">Comment Editor</h2>
             <TextEditor />
