@@ -23,6 +23,7 @@ pub struct PlaylistPage {
 
 #[derive(Serialize, Debug)]
 pub struct PlaylistItem {
+    pub id: String,
     pub title: String,
     pub href: String,
     pub icon: String

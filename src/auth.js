@@ -79,8 +79,8 @@ async function triggerResponse(payload) {
     window.location.reload();
 }
 
-export async function getPlaylistContents() {
-    return await invoke("get_playlist_items");
+export async function getPlaylistContents(offset, limit) {
+    return await invoke("get_playlist_items", {offset, limit});
 }
 
 export async function getProfile() {
