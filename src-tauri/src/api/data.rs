@@ -73,16 +73,16 @@ pub struct SuperItem {
 
 #[derive(Deserialize, Debug)]
 pub struct Item {
-    pub id: String,
-    pub href: String,
+    pub id: Option<String>,
+    pub href: Option<String>,
     pub name: String,
     pub album: Album,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Album {
-    pub id: String,
-    pub href: String,
+    pub id: Option<String>,
+    pub href: Option<String>,
     pub name: String,
     pub images: Vec<ImageObjects>,
 }

@@ -204,7 +204,8 @@ function App() {
         setPlaylist(code);
       }
 
-      // setPlaylistInput(code || playlistInput);
+      // this is needed (the useEffect above doesn't change it back)
+      setPlaylistInput(code || playlistInput);
     }
   }
 

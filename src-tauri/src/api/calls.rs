@@ -208,6 +208,8 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
         // ("fields", "items(track(name,href,album(name,href,image)))".to_string())
     ];
 
+    println!("{:?}", &params);
+
     let res = call_with_state(
         &app,
         &mut state,
@@ -220,6 +222,11 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
             // println!("{:?}", resp.url().as_str());
             // let bb = resp.bytes().await.unwrap();
             // println!("{:?}", std::str::from_utf8(&bb));
+            // std::fs::write("./pl-items-test.json",
+            //     serde_json::to_string_pretty(
+            //         &(serde_json::from_slice::<serde_json::Value>(&bb).unwrap())
+            //     ).unwrap()
+            // ).expect("Yup Yup");
             // let unwrapped = serde_json::from_slice::<GetPlaylistItemsResponse>(&bb).unwrap();
             let unwrapped = resp.json::<GetPlaylistItemsResponse>().await.expect("playlist retrieval failed");
             // println!("{:?}", unwrapped.items[0]);
@@ -228,10 +235,16 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
                 offset: unwrapped.offset,
                 items: unwrapped.items.iter().map(|i| {
                     PlaylistItem {
-                        id: i.item.id.clone(),
+                        id: i.item.id.clone().unwrap_or(uuid::Uuid::new_v4().hyphenated().to_string()),
                         title: i.item.name.clone(),
-                        href: i.item.href.clone(),
-                        icon: i.item.album.images[0].url.clone()
+                        href: i.item.href.clone().unwrap_or("https://example.com".to_string()),
+                        icon: {
+                            if let Some(imgobj) = i.item.album.images.get(0) {
+                                imgobj.url.clone()
+                            } else {
+                                "https://i.sstatic.net/kOnzy.gif".to_string()
+                            }
+                        }
                     }
                 }).collect()
             };
