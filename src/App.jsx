@@ -7,11 +7,26 @@ import "./App.css";
 import TextEditor from "./TextEditor.jsx"
 import SelectableList from "./SelectableList.jsx";
 
+const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
+
+function submitOnEnter(f) {
+  return (e) => {
+    if (e.keyCode == 13) {
+      return f(e)
+    }
+  };
+}
+
 function App() {
   const ENTRIES_PER_PAGE = 20;
   const [pageIndex, setPageIndex] = useState(1);
-
   const [pageIndexSetter, setPageIndexSetter] = useState(1);
+
+  const [playlist, setPlaylist] = useState("https://open.spotify.com/playlist/6kBCzasJ5DH01MDB3bLPZV?si=MeZsRr1vQXq5mGI9pS3syw&pi=RKenW5kUTyq5j");
+  const [playlistInput, setPlaylistInput] = useState("https://open.spotify.com/playlist/6kBCzasJ5DH01MDB3bLPZV?si=MeZsRr1vQXq5mGI9pS3syw&pi=RKenW5kUTyq5j");
+
+  const [plTotal, setPlTotal] = useState(0);
+  const [plName, setPlName] = useState("default playlist name");
 
   // https://f4.bcbits.com/img/a0401863863_16.jpg
   // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
@@ -27,6 +42,8 @@ function App() {
   const [pfp, setPfp] = useState('https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
 
   const [playlistPage, setPlaylistPage] = useState(null);
+
+  const maxPages = Math.ceil(plTotal/ENTRIES_PER_PAGE)
 
   function selectedEntry(newId) {
     if (playlistPage != null) {
@@ -67,40 +84,135 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const check = async () => {
-      if (isLoggedIn) {
-        let conts = await getPlaylistContents(pageIndex - 1, ENTRIES_PER_PAGE);
-        setPlaylistPage(conts);
-      }
-    };
-
-    check();
-  }, [isLoggedIn]);
-
-  useEffect(() => {
     setPageIndexSetter(pageIndex)
   }, [pageIndex]);
 
-  function onPageIndexSetterChange(e) {
+  function onIndexChange(e) {
     if (e.target.checkValidity()) {
       setPageIndexSetter(e.target.value);
     }
   }
 
-  function pageIndexSubmitter(e) {
+  function onIndexSubmit(e) {
     // this is going to run for onSubmit and onUnblur
     if (e.target.checkValidity()) {
-      setPageIndex(pageIndexSetter);
+      setPageIndex(Math.max(1, Math.min(maxPages, pageIndexSetter)));
       e.target.blur();
     }
   }
 
-  console.warn(pageIndex);
+  function goToFirstPage(e) {
+    if (pageIndex > 1) {
+      setPageIndex(1);
+    }
+  }
+
+  function goToLastPage(e) {
+    if (pageIndex < maxPages) {
+      setPageIndex(maxPages);
+    }
+  }
+
+  function goToPreviousPage(e) {
+    if (pageIndex > 1) {
+      setPageIndex(Math.max(1, Math.min(maxPages, pageIndex - 1)));
+    }
+  }
+
+  function goToNextPage(e) {
+    if (pageIndex < maxPages) {
+      setPageIndex(Math.max(1, Math.min(maxPages, pageIndex + 1)));
+    }
+  }
+
+  // ==== PLAYLIST STUFF ====
+
+  async function initialPlaylistGet() {
+    const res = await invoke("get_initial_playlist");
+    setPlaylist(res);
+    console.info("Retrieved initial playlist: ", res);
+  }
+
+  async function getPlaylistDeets() {
+    try {
+      const res = await invoke("get_current_playlist_details");
+      console.info("Retrieved playlist details: ", res);
+      setPlName(res.name);
+      setPlTotal(res.items.total);
+    } catch (e) {
+      setPlName("Playlist not found!");
+      setPlTotal(404);
+    }
+  }
+
+  async function getPlaylistContents() {
+    if (isLoggedIn && playlist) {
+      try {
+        let conts = await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
+        setPlaylistPage(conts);
+      } catch (e) {
+        setPlaylistPage(null);
+      }
+    }
+  }
+
+  useEffect(() => {
+    initialPlaylistGet()
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    setPlaylistInput(playlist || playlistInput);
+    if (playlist !== null && isLoggedIn) {
+      getPlaylistDeets()
+    }
+  }, [isLoggedIn, playlist]);
+
+  useEffect(() => {
+    getPlaylistContents()
+  }, [isLoggedIn, playlist, pageIndex]);
+
+  function onPlInputChange(e) {
+    if (e.target.checkValidity()) {
+      setPlaylistInput(e.target.value || "");
+    }
+  }
+
+  function onPlInputFocus(e) {
+    setPlaylistInput(playlist === null ? playlistInput : `https://open.spotify.com/playlist/${playlist}`);
+  }
+
+  function getOnlyCode(pl) {
+    let code = plPattern.exec(pl);
+    if (code === null) {
+      console.error("Invalid URL: ", pl);
+      return null;
+    } if (code[1] === undefined) {
+      console.error("Invalid URL: ", pl);
+      return null;
+    } else {
+      return code[1];
+    }
+  }
+
+  async function onPlSubmit(e) {
+    // this is going to run for onSubmit and onUnblur
+    if (e.target.checkValidity()) {
+      e.target.blur();
+      let code = getOnlyCode(playlistInput);
+      if (playlist != code) {
+        await invoke("set_playlist", {plCode: code});
+        setPlaylist(code);
+      }
+
+      // setPlaylistInput(code || playlistInput);
+    }
+  }
+
+  // console.warn(pageIndex);
 
   if (loading) return <p>Loading data...</p>;
   if (error) return <p>Error?: {error.message} {error}</p>;
 
-  console.log(playlistPage);
   let listing = [];
   if (playlistPage) {
     listing = playlistPage.items.map((entry, index) => {
@@ -111,13 +223,11 @@ function App() {
       }
       return item
     })
-    console.log(playlistPage.offset);
-    console.log(playlistPage.limit);
   }
-
 
   return (
     <main className="higher-power">
+      {/*<script src="https://sdk.scdn.co/spotify-player.js"></script>*/}
       <div className="header">
         <div className="title-and-tabs">
           <h1>StoneRank</h1>
@@ -151,14 +261,31 @@ function App() {
           <div className="integrated-player">
             {/* <h2 className="section-title">Spotify Player</h2> */}
             {/* <button id="togglePlay" onClick={onPlayToggle}>Toggle Play</button> */}
-            <iframe style={{border: "none"}} src={`https://open.spotify.com/embed/track/${selectedTrack}?utm_source=generator`} width="100%" height="100%" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <iframe style={{border: "none", }} src={`https://open.spotify.com/embed/track/${selectedTrack}?utm_source=generator`} width="100%" height="100%" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
           </div>
           {/* <div className="source-selector">
             <h2 className="section-title">Player Picker</h2>
           </div> */}
           <div className="unranked-list">
             {/* <h2 className="section-title">Unranked List</h2> */}
-            {isLoggedIn && playlistPage && 
+            <div className="playlist-header">
+              <div className="playlist-input">
+                <label>Playlist: </label>
+                <input
+                  type="text"
+                  value={playlistInput}
+                  title="Current playlist url. Paste a new one in if needed!"
+                  onChange={onPlInputChange}
+                  onFocus={onPlInputFocus}
+                  onBlur={onPlSubmit}
+                  onKeyDown={submitOnEnter(onPlSubmit)}
+                  onSubmit={onPlSubmit}
+                />
+              </div>
+              <div>Playlist Name: {plName}</div>
+              <div>Count: {plTotal}</div>
+            </div>
+            {(isLoggedIn && playlistPage) ?
             <>
               <div className="list-container">
                 <SelectableList
@@ -171,21 +298,24 @@ function App() {
                 />
               </div>
               <div className="pagination-options">
-                <button>{"<<"}</button>
-                <button>{"<"}</button>
+                <button disabled={pageIndex <= 1} onClick={goToFirstPage}>{"<<"}</button>
+                <button disabled={pageIndex <= 1} onClick={goToPreviousPage}>{"<"}</button>
                 <input
                   type="text"
                   value={pageIndexSetter}
-                  onChange={onPageIndexSetterChange}
+                  onChange={onIndexChange}
                   pattern="\d+"
-                  onBlur={pageIndexSubmitter}
-                  onKeyDown={(e) => e.keyCode == 13 && pageIndexSubmitter(e)}
-                  onSubmit={pageIndexSubmitter}
+                  onBlur={onIndexSubmit}
+                  onKeyDown={submitOnEnter(onIndexSubmit)}
+                  onSubmit={onIndexSubmit}
                 />
-                <button>{">"}</button>
-                <button>{">>"}</button>
+                <button disabled={pageIndex >= maxPages} onClick={goToNextPage}>{">"}</button>
+                <button disabled={pageIndex >= maxPages} onClick={goToLastPage}>{">>"}</button>
               </div>
+              <div className="pagination-pages-num">{maxPages} Pages</div>
             </>
+            :
+            <div>Loading Playlist...</div>
             }
           </div>
           {/* <div className="ranked-list">

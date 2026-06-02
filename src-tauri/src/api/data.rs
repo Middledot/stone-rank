@@ -37,6 +37,17 @@ pub struct ImageObjects {
     pub url: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetPlaylistDeetsResponse {
+    pub name: String,
+    pub items: PlaylistDeetsItems,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PlaylistDeetsItems {
+    pub total: i32,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct GetProfileResponse {
     pub display_name: String,

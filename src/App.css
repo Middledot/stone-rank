@@ -183,6 +183,21 @@ body {
   width: 100%;
 }
 
+.playlist-header {
+  margin: 5px 0;
+  font-size: 13px;
+}
+
+.playlist-input {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.playlist-input > input {
+  width: 100%;
+}
+
 .pagination-options {
   display: flex;
   flex-direction: row;
@@ -196,4 +211,11 @@ body {
 
 .pagination-options > input {
   width: 40px;
+}
+
+.pagination-pages-num {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  font-size: 12px
 }

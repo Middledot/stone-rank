@@ -16,7 +16,7 @@ use super::data::{
     PlaylistPage
 };
 use super::login::refresh_tokens;
-use crate::api::data::ApiError;
+use crate::api::data::{ApiError, GetPlaylistDeetsResponse};
 use crate::state::SessionState;
 use reqwest::header::AUTHORIZATION;
 
@@ -139,13 +139,67 @@ pub async fn get_profile(app: tauri::AppHandle, state: State<'_, Mutex<SessionSt
     Ok(value)
 }
 
+#[tauri::command]
+pub async fn get_initial_playlist(state: State<'_, Mutex<SessionState>>) -> Result<Option<String>, String> {
+    let state = state.lock().await;
+
+    Ok(state.playlist_code.clone())
+}
+
+#[tauri::command]
+pub async fn get_current_playlist_details(app: tauri::AppHandle, state: State<'_, Mutex<SessionState>>) -> Result<Option<GetPlaylistDeetsResponse>, String> {
+    let mut state = state.lock().await;
+
+    if state.playlist_code.is_none() {
+        return Ok(None);
+    }
+
+    let pl_code = state.playlist_code.clone().unwrap();
+
+    let res = call_with_state(
+        &app,
+        &mut state,
+        format!("/playlists/{}", pl_code).as_str(),
+        None
+    ).await;
+
+    match res {
+        Ok(resp) => {
+            let unwrapped = resp.json::<GetPlaylistDeetsResponse>().await.expect("Playlist response parsing failed");
+            Ok(Some(unwrapped))
+        }
+        Err(_) => {
+            Err("Retrieving playlist failed".to_string())
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn set_playlist(app: tauri::AppHandle, state: State<'_, Mutex<SessionState>>, pl_code: Option<String>) -> Result<(), String> {
+    let mut state = state.lock().await;
+
+    state.playlist_code = pl_code.clone();
+
+    if let Ok(store) = app.store("store.json") {
+        if let Some(code) = pl_code {
+            store.set("playlist_code", json!(code));
+        }
+        let _ = store.save();
+    }
+
+    Ok(())
+}
 
 // TODO: how to access store without app handle?
 #[tauri::command]
 pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<SessionState>>, offset: i32, limit: i32) -> Result<PlaylistPage, String> {
     let mut state = state.lock().await;
 
-    let pl_code = env::var("PLAYLIST_CODE").expect("[environment variables] PLAYLIST_CODE must be set");
+    if state.playlist_code.is_none() {
+        return Err("No playlist to retrieve from!".to_string());
+    }
+
+    let pl_code = state.playlist_code.clone().unwrap();
 
     let params = vec![
         ("limit", limit.to_string()),
@@ -191,7 +245,7 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
             //     logged_in: false,
             // };
             println!("TWINJEMIN");
-            Err("dude".to_string())
+            Err("Some error happened retrieving playlist items".to_string())
         }
     }
 }

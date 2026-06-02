@@ -16,14 +16,6 @@ use state::SessionState;
 mod api;
 
 
-#[tauri::command]
-async fn get_sorting_playlist(state: State<'_, Mutex<SessionState>>) -> Result<String, String> {
-    let state = state.lock().await;
-
-    Ok(state.playlist_url.clone())
-}
-
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let file = File::open("CONFIG.json").expect("gng");
@@ -47,6 +39,7 @@ pub fn run() {
                 if let Ok(store) = app_handle.store("store.json") {
                     let access_token: Option<String>;
                     let refresh_token: Option<String>;
+                    let playlist_code: Option<String>;
 
                     if store.get("access_token").is_none() {
                         access_token = None;
@@ -62,12 +55,18 @@ pub fn run() {
                         refresh_token = Some(store.get("refresh_token").unwrap().as_str().unwrap().to_string());
                     }
 
+                    if store.get("playlist_code").is_none() {
+                        playlist_code = None;
+                    } else {
+                        playlist_code = Some(store.get("playlist_code").unwrap().as_str().unwrap().to_string());
+                    }
+
                     let _ = store.save();
 
                     app_handle.manage(Mutex::new(SessionState {
                         access_token: access_token,
                         refresh_token: refresh_token,
-                        playlist_url: read_res["final_list_destination"].to_string(),
+                        playlist_code: playlist_code,  // read_res["final_list_destination"].to_string()
                     }));
                 }
             });
@@ -75,8 +74,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            get_sorting_playlist,
+            api::calls::get_initial_playlist,
             api::calls::get_profile,
+            api::calls::get_initial_playlist,
+            api::calls::set_playlist,
+            api::calls::get_current_playlist_details,
             api::calls::get_playlist_items,
             api::login::init_login,
             api::login::finish_login,
