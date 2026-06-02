@@ -28,6 +28,8 @@ function App() {
   const [plTotal, setPlTotal] = useState(0);
   const [plName, setPlName] = useState("default playlist name");
 
+  const [plExists, setPlExists] = useState(true);
+
   // https://f4.bcbits.com/img/a0401863863_16.jpg
   // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
 
@@ -139,9 +141,11 @@ function App() {
       console.info("Retrieved playlist details: ", res);
       setPlName(res.name);
       setPlTotal(res.items.total);
+      setPlExists(true);
     } catch (e) {
       setPlName("Playlist not found!");
       setPlTotal(404);
+      setPlExists(false);
     }
   }
 
@@ -208,8 +212,6 @@ function App() {
       setPlaylistInput(code || playlistInput);
     }
   }
-
-  // console.warn(pageIndex);
 
   if (loading) return <p>Loading data...</p>;
   if (error) return <p>Error?: {error.message} {error}</p>;
@@ -316,7 +318,11 @@ function App() {
               <div className="pagination-pages-num">{maxPages} Pages</div>
             </>
             :
-            <div>Loading Playlist...</div>
+            [...Array(15)].map((_) => {
+              return plExists
+                ? <div key={crypto.randomUUID()}>Loading Playlist...</div>
+                : <div key={crypto.randomUUID()}>Error!!</div>
+              })
             }
           </div>
           {/* <div className="ranked-list">
