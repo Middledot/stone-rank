@@ -8,8 +8,13 @@ import TextEditor from "./TextEditor.jsx"
 import SelectableList from "./SelectableList.jsx";
 
 function App() {
+  const ENTRIES_PER_PAGE = 20;
+  const [pageIndex, setPageIndex] = useState(1);
+
+  const [pageIndexSetter, setPageIndexSetter] = useState(1);
+
   // https://f4.bcbits.com/img/a0401863863_16.jpg
-  const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
+  // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
 
   const [selectedTrack, setSelectedTrack] = useState("");
   const [multiItem, setMultiItem] = useState([]);  // dud for now
@@ -64,7 +69,7 @@ function App() {
   useEffect(() => {
     const check = async () => {
       if (isLoggedIn) {
-        let conts = await getPlaylistContents(0, 20);
+        let conts = await getPlaylistContents(pageIndex - 1, ENTRIES_PER_PAGE);
         setPlaylistPage(conts);
       }
     };
@@ -72,6 +77,25 @@ function App() {
     check();
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    setPageIndexSetter(pageIndex)
+  }, [pageIndex]);
+
+  function onPageIndexSetterChange(e) {
+    if (e.target.checkValidity()) {
+      setPageIndexSetter(e.target.value);
+    }
+  }
+
+  function pageIndexSubmitter(e) {
+    // this is going to run for onSubmit and onUnblur
+    if (e.target.checkValidity()) {
+      setPageIndex(pageIndexSetter);
+      e.target.blur();
+    }
+  }
+
+  console.warn(pageIndex);
 
   if (loading) return <p>Loading data...</p>;
   if (error) return <p>Error?: {error.message} {error}</p>;
@@ -135,6 +159,7 @@ function App() {
           <div className="unranked-list">
             {/* <h2 className="section-title">Unranked List</h2> */}
             {isLoggedIn && playlistPage && 
+            <>
               <div className="list-container">
                 <SelectableList
                   id="track-selector-from-playlist"
@@ -145,6 +170,22 @@ function App() {
                   items={listing}
                 />
               </div>
+              <div className="pagination-options">
+                <button>{"<<"}</button>
+                <button>{"<"}</button>
+                <input
+                  type="text"
+                  value={pageIndexSetter}
+                  onChange={onPageIndexSetterChange}
+                  pattern="\d+"
+                  onBlur={pageIndexSubmitter}
+                  onKeyDown={(e) => e.keyCode == 13 && pageIndexSubmitter(e)}
+                  onSubmit={pageIndexSubmitter}
+                />
+                <button>{">"}</button>
+                <button>{">>"}</button>
+              </div>
+            </>
             }
           </div>
           {/* <div className="ranked-list">

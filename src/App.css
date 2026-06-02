@@ -136,7 +136,13 @@ body {
 .integrated-player {
   grid-area: player;
   background-color: green;
-  width: 100%;
+  width: auto;
+  height: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .source-selector {
@@ -175,4 +181,19 @@ body {
   grid-area: text;
   background-color: white;
   width: 100%;
+}
+
+.pagination-options {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.pagination-options > * {
+  margin: 5px;
+  flex-grow: 0;
+}
+
+.pagination-options > input {
+  width: 40px;
 }
