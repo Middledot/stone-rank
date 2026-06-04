@@ -30,6 +30,14 @@ function App() {
 
   const [plExists, setPlExists] = useState(true);
 
+  const [playlistPage, setPlaylistPage] = useState(null);
+  const maxPages = Math.ceil(plTotal/ENTRIES_PER_PAGE)
+
+  const [comment, setComment] = useState("testing");
+  const [commentInput, setCommentInput] = useState("testing");
+  const [commentSaving, setCommentSaving] = useState(0);
+  const [commentSavingTimeout, setCommentSavingTimeout] = useState(null);
+  
   // https://f4.bcbits.com/img/a0401863863_16.jpg
   // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
 
@@ -43,9 +51,39 @@ function App() {
   const [username, setUsername] = useState('Jo Doe');
   const [pfp, setPfp] = useState('https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
 
-  const [playlistPage, setPlaylistPage] = useState(null);
+  // === Comments ===
 
-  const maxPages = Math.ceil(plTotal/ENTRIES_PER_PAGE)
+  function onCommentChange(e) {
+    setCommentInput(e.target.value || "");
+  }
+
+  function onCommentBlur(e) {
+    setCommentSaving(1);
+    return invoke("save_comment", {trackId: selectedTrack, comment: commentInput})
+      .then((r) => {
+        setComment(commentInput);
+        console.info("comment saving res: ", r);
+
+        setCommentSaving(2);
+        clearTimeout(commentSavingTimeout);
+        setCommentSavingTimeout(setTimeout(() => setCommentSaving(0), 5000));
+      });
+  }
+
+  async function getComment() {
+    const res = await invoke("get_comment", {trackId: selectedTrack});
+    setComment(res)
+  }
+
+  useEffect(() => {
+    getComment();
+  }, [selectedTrack]);
+
+  useEffect(() => {
+    console.info(comment)
+    setCommentInput(comment)
+  }, [comment]);
+
 
   function selectedEntry(newId) {
     if (playlistPage != null) {
@@ -153,9 +191,17 @@ function App() {
     if (isLoggedIn && playlist) {
       try {
         let conts = await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
+        // use finally and else
+        if (conts.items.length !== 0) {
+          setSelectedTrack(conts.items[0].id);
+        } else {
+          setSelectedTrack("");
+        }
         setPlaylistPage(conts);
       } catch (e) {
         setPlaylistPage(null);
+        setSelectedTrack("");
+        throw e;
       }
     }
   }
@@ -330,8 +376,28 @@ function App() {
             <ul></ul>
           </div> */}
           <div className="text-modifier">
-            <h2 className="section-title">Comment Editor</h2>
-            <TextEditor />
+            <div className="text-modifier-header">
+              <h2>Comment Editor</h2>
+              {commentSaving != 0 && (
+                commentSaving == 1 ?
+                <div className="save-icon">
+                  Saving...
+                </div>
+                :
+                <div className="save-icon">
+                  Saved!
+                </div>
+              )
+              }
+            </div>
+            <hr />
+            <div className="text-editor">
+              <textarea
+                onChange={onCommentChange}
+                onBlur={onCommentBlur}
+                value={commentInput}
+              />
+            </div>
           </div>
         </div>
       </div>

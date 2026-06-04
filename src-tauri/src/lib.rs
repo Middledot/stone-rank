@@ -1,9 +1,12 @@
 use tauri::Manager;
 use tauri::State;
 use tokio::sync::Mutex;
+use sea_orm::{Database, DatabaseConnection};
 
 use std::fs::File;
 use std::io::BufReader;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 use serde_json::Value;
 use tauri_plugin_store::StoreExt;  // needed to access store
@@ -14,7 +17,18 @@ use std::env;
 mod state;
 use state::SessionState;
 mod api;
+mod db;
 
+use migration::{Migrator, MigratorTrait};
+
+async fn pick_database(path: &PathBuf) -> Result<DatabaseConnection, sea_orm::DbErr> {
+    let mut database = Database::connect(format!("sqlite://{}/classifier.db?mode=rwc", path.as_os_str().to_str().unwrap())).await.unwrap();
+
+    // TODO: verify database has correct fields
+    Migrator::up(&database, None).await.expect("oh no, my migrator broke");
+
+    Ok(database)
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -35,8 +49,11 @@ pub fn run() {
 
             // this seems to be a pattern for asynchronous initialization (in tauri)
             let app_handle = app.handle().clone();
+            let data_path = app.path().app_data_dir().unwrap();
             tauri::async_runtime::spawn(async move {
                 if let Ok(store) = app_handle.store("store.json") {
+                    let database = pick_database(&data_path).await.expect("doesn't work");
+
                     let access_token: Option<String>;
                     let refresh_token: Option<String>;
                     let playlist_code: Option<String>;
@@ -67,6 +84,8 @@ pub fn run() {
                         access_token: access_token,
                         refresh_token: refresh_token,
                         playlist_code: playlist_code,  // read_res["final_list_destination"].to_string()
+                        app_data_directory: data_path,
+                        db: Arc::new(Mutex::new(database))
                     }));
                 }
             });
@@ -83,6 +102,8 @@ pub fn run() {
             api::login::init_login,
             api::login::finish_login,
             api::login::start_response_server,
+            api::calls::save_comment,
+            api::calls::get_comment
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -8,6 +8,7 @@ use serde_json::{json};
 use tauri_plugin_store::StoreExt;  // needed to access store
 use url::Url;
 
+use crate::db;
 use super::data::{
     GetProfileResponse,
     Profile,
@@ -20,6 +21,7 @@ use crate::api::data::{ApiError, GetPlaylistDeetsResponse};
 use crate::state::SessionState;
 use reqwest::header::AUTHORIZATION;
 
+use sea_orm::{EntityTrait, ModelTrait, ActiveModelTrait, Set};
 
 const ROOT_PATH: &str = "https://api.spotify.com/v1";
 
@@ -263,3 +265,49 @@ pub async fn get_playlist_items(app: tauri::AppHandle, state: State<'_, Mutex<Se
     }
 }
 
+#[tauri::command]
+pub async fn get_comment(state: State<'_, Mutex<SessionState>>, track_id: String) -> Result<String, String> {
+    let mut state = state.lock().await;
+    let classifier = state.db.lock().await;
+
+    let res_comment: Option<db::comment::Model> = db::comment::Entity::find_by_id(track_id).one(&*classifier).await.expect("uh oh 2");
+    if let Some(comment) = res_comment {
+        return Ok(comment.comment);
+    } else {
+        println!("[oops] Comment not retrieved");
+        return Ok("".to_string());
+    }
+}
+
+#[tauri::command]
+pub async fn save_comment(state: State<'_, Mutex<SessionState>>, track_id: String, comment: String) -> Result<bool, String> {
+    let mut state = state.lock().await;
+    let classifier = state.db.lock().await;
+
+    if comment.len() == 0 {
+        // delete comment
+        let res = db::comment::Entity::delete_by_id(track_id).exec(&*classifier).await;
+
+        return Ok(true);
+    } else {
+        // insert or update (in two operations for now)
+        let record_exist_checker: Option<db::comment::Model> = db::comment::Entity::find_by_id(track_id.clone()).one(&*classifier).await.expect("uh oh 2");
+        if let Some(mut record) = record_exist_checker {
+            let mut record: db::comment::ActiveModel = record.into();
+            record.comment = Set(comment);
+
+            let record: db::comment::Model = record.update(&*classifier).await.unwrap();
+
+            return Ok(true);
+        } else {
+            let record = db::comment::ActiveModel {
+                track_id: Set(track_id),
+                comment: Set(comment),
+            };
+
+            let record: db::comment::Model = record.insert(&*classifier).await.unwrap();
+
+            return Ok(true);
+        }
+    }
+}
