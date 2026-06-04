@@ -28,6 +28,7 @@ function App() {
   const [plTotal, setPlTotal] = useState(0);
   const [plName, setPlName] = useState("default playlist name");
 
+  const [loadingPlaylist, setLoadingPlaylist] = useState(true);
   const [plExists, setPlExists] = useState(true);
 
   const [playlistPage, setPlaylistPage] = useState(null);
@@ -188,9 +189,8 @@ function App() {
   }
 
   async function getPlaylistContents() {
-    if (isLoggedIn && playlist) {
-      try {
-        let conts = await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
+    await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
+      .then((conts) => {
         // use finally and else
         if (conts.items.length !== 0) {
           setSelectedTrack(conts.items[0].id);
@@ -198,12 +198,16 @@ function App() {
           setSelectedTrack("");
         }
         setPlaylistPage(conts);
-      } catch (e) {
+        setLoadingPlaylist(false);
+        setPlExists(true);
+      })
+      .catch((e) => {
         setPlaylistPage(null);
         setSelectedTrack("");
+        setLoadingPlaylist(false);
+        setPlExists(false);
         throw e;
-      }
-    }
+      })
   }
 
   useEffect(() => {
@@ -218,7 +222,11 @@ function App() {
   }, [isLoggedIn, playlist]);
 
   useEffect(() => {
-    getPlaylistContents()
+    if (isLoggedIn && playlist) {
+      setLoadingPlaylist(true);
+      setPlExists(true);
+      getPlaylistContents()
+    }
   }, [isLoggedIn, playlist, pageIndex]);
 
   function onPlInputChange(e) {
@@ -334,9 +342,18 @@ function App() {
               <div>Playlist Name: {plName}</div>
               <div>Count: {plTotal}</div>
             </div>
-            {(isLoggedIn && playlistPage) ?
+            {(isLoggedIn) &&
             <>
               <div className="list-container">
+                {(!plExists || loadingPlaylist) &&
+                  <div className="playlist-load-notifier">
+                    {[...Array(15)].map((_) => {
+                      return plExists
+                        ? <div key={crypto.randomUUID()}>Loading Playlist...</div>
+                        : <div key={crypto.randomUUID()}>Error!!</div>
+                      })}
+                  </div>
+                }
                 <SelectableList
                   id="track-selector-from-playlist"
                   select={selectedTrack}
@@ -347,8 +364,8 @@ function App() {
                 />
               </div>
               <div className="pagination-options">
-                <button disabled={pageIndex <= 1} onClick={goToFirstPage}>{"<<"}</button>
-                <button disabled={pageIndex <= 1} onClick={goToPreviousPage}>{"<"}</button>
+                <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToFirstPage}>{"<<"}</button>
+                <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToPreviousPage}>{"<"}</button>
                 <input
                   type="text"
                   value={pageIndexSetter}
@@ -357,18 +374,13 @@ function App() {
                   onBlur={onIndexSubmit}
                   onKeyDown={submitOnEnter(onIndexSubmit)}
                   onSubmit={onIndexSubmit}
+                  disabled={!plExists || loadingPlaylist}
                 />
-                <button disabled={pageIndex >= maxPages} onClick={goToNextPage}>{">"}</button>
-                <button disabled={pageIndex >= maxPages} onClick={goToLastPage}>{">>"}</button>
+                <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToNextPage}>{">"}</button>
+                <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToLastPage}>{">>"}</button>
               </div>
               <div className="pagination-pages-num">{maxPages} Pages</div>
             </>
-            :
-            [...Array(15)].map((_) => {
-              return plExists
-                ? <div key={crypto.randomUUID()}>Loading Playlist...</div>
-                : <div key={crypto.randomUUID()}>Error!!</div>
-              })
             }
           </div>
           {/* <div className="ranked-list">
@@ -396,6 +408,7 @@ function App() {
                 onChange={onCommentChange}
                 onBlur={onCommentBlur}
                 value={commentInput}
+                disabled={!plExists || loadingPlaylist}
               />
             </div>
           </div>

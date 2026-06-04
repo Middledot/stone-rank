@@ -151,26 +151,6 @@ body {
   width: 100%;
 }
 
-.unranked-list {
-  grid-area: unranked;
-  background-color: bisque;
-  width: auto;
-  padding: 20px;
-  height: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.list-container {
-  background-color: white;
-  padding: 0;
-  margin: 0;
-  overflow: scroll;
-  display: inline-block;
-  height: 100%;
-  width: 100%;
-}
-
 .ranked-list {
   grid-area: ranked;
   background-color: orangered;
@@ -227,6 +207,37 @@ body {
   height: 100%;
   width: 100%;
   resize: none;
+}
+
+.unranked-list {
+  grid-area: unranked;
+  background-color: bisque;
+  width: auto;
+  padding: 20px;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-container {
+  background-color: white;
+  padding: 0;
+  margin: 0;
+  overflow: scroll;
+  display: inline-block;
+  height: 100%;
+  width: 100%;
+}
+
+.list-container:has(div.playlist-load-notifier) {
+  overflow: hidden!important;
+}
+
+.playlist-load-notifier {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 200)
 }
 
 .playlist-header {
