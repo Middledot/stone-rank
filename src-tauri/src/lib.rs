@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use tauri_plugin_store::StoreExt; // needed to access store
 
-use dotenvy::dotenv;
 use std::env;
 
 mod state;
@@ -35,13 +34,19 @@ async fn pick_database(path: &PathBuf) -> Result<DatabaseConnection, sea_orm::Db
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // TODO: this is most likely redundant
-    dotenv().ok();
+    // https://aptabase.com/blog/where-to-find-tauri-logs
 
     tauri::Builder::default()
         .plugin(
+            // https://v2.tauri.app/plugin/logging/
             tauri_plugin_log::Builder::new()
                 .level(tauri_plugin_log::log::LevelFilter::Info)
+                .max_file_size(50_000 /* bytes */)
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("logs".to_string()),
+                    },
+                ))
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .format(|out, message, record| {
                     out.finish(format_args!(
