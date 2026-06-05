@@ -1,10 +1,12 @@
 # Stone Rank
 
-A desktop app for attaching notes to spotify tracks.
+Lightweight desktop app for attaching notes to spotify tracks.
 
-This app is used by a friend of mine to rank/rate songs. It is a very one-use-case app.
+- Playlist loading, selection, and pagination
+- Embedded preview
+- Persistant logins
 
-It's public for educational purposes and contains some personally re-usable frontend and backend elements.
+This app is used by a friend of mine to rank/rate songs. It is a very one-use-case app. It's public for educational purposes and contains some personally re-usable frontend and backend elements (especially to do with the spotify API, UI tools, and backend state saving).
 
 Built with Tauri + SQlite + ReactJS
 
