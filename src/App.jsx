@@ -2,13 +2,18 @@ import { useState, useEffect } from "react";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
 
-import { triggerLogin, getProfile, getPlaylistContents } from "./auth.js"
+import { triggerLogin, triggerLogOff, getProfile, getPlaylistContents } from "./auth.js"
 import "./App.css";
 import TextEditor from "./TextEditor.jsx"
 import SelectableList from "./SelectableList.jsx";
 
 const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
 
+/**
+ * [helper] transforms normal submit callbacks into ones that can
+ * be triggered via the ENTER key.
+ * 
+ */
 function submitOnEnter(f) {
   return (e) => {
     if (e.keyCode == 13) {
@@ -20,10 +25,10 @@ function submitOnEnter(f) {
 function App() {
   const ENTRIES_PER_PAGE = 20;
   const [pageIndex, setPageIndex] = useState(1);
-  const [pageIndexSetter, setPageIndexSetter] = useState(1);
+  const [pageIndexInput, setPageIndexInput] = useState(1);
 
-  const [playlist, setPlaylist] = useState("https://open.spotify.com/playlist/6kBCzasJ5DH01MDB3bLPZV?si=MeZsRr1vQXq5mGI9pS3syw&pi=RKenW5kUTyq5j");
-  const [playlistInput, setPlaylistInput] = useState("https://open.spotify.com/playlist/6kBCzasJ5DH01MDB3bLPZV?si=MeZsRr1vQXq5mGI9pS3syw&pi=RKenW5kUTyq5j");
+  const [playlist, setPlaylist] = useState("6kBCzasJ5DH01MDB3bLPZV");
+  const [playlistInput, setPlaylistInput] = useState("6kBCzasJ5DH01MDB3bLPZV");
 
   const [plTotal, setPlTotal] = useState(0);
   const [plName, setPlName] = useState("default playlist name");
@@ -38,9 +43,6 @@ function App() {
   const [commentInput, setCommentInput] = useState("testing");
   const [commentSaving, setCommentSaving] = useState(0);
   const [commentSavingTimeout, setCommentSavingTimeout] = useState(null);
-  
-  // https://f4.bcbits.com/img/a0401863863_16.jpg
-  // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
 
   const [selectedTrack, setSelectedTrack] = useState("");
   const [multiItem, setMultiItem] = useState([]);  // dud for now
@@ -52,18 +54,31 @@ function App() {
   const [username, setUsername] = useState('Jo Doe');
   const [pfp, setPfp] = useState('https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg');
 
+  // https://f4.bcbits.com/img/a0401863863_16.jpg
+  // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
+
   // === Comments ===
 
+  /**
+   * [callback] for when text is typed into the textarea
+   */
   function onCommentChange(e) {
     setCommentInput(e.target.value || "");
   }
 
+  /**
+   * [callback] for when the comment textarea is deselected (event is called onBlur).
+   * This will save the text written in the input.
+   * 
+   * This is also triggered when another track is selected from the list.
+   */
   function onCommentBlur(e) {
     setCommentSaving(1);
+    console.info("Saving comment...")
     return invoke("save_comment", {trackId: selectedTrack, comment: commentInput})
       .then((r) => {
         setComment(commentInput);
-        console.info("comment saving res: ", r);
+        console.info("Comment saved with backend response: ", r);
 
         setCommentSaving(2);
         clearTimeout(commentSavingTimeout);
@@ -71,133 +86,209 @@ function App() {
       });
   }
 
+  /**
+   * [command] that retrieves a comment from the backend.
+   */
   async function getComment() {
-    const res = await invoke("get_comment", {trackId: selectedTrack});
-    setComment(res)
+    const text = await invoke("get_comment", {trackId: selectedTrack});
+    setComment(text)
+    console.info("Retrieved comment: ", text)
   }
 
+  /**
+   * [effect] that changes the comment when the selected track is changed.
+   */
   useEffect(() => {
+    console.info("Selected track changed! Retrieving comment...")
     getComment();
   }, [selectedTrack]);
 
+
+  /**
+   * [effect] that aligns the input state (commentInput) with the real, saved
+   * comment (comment) when comment is changed
+   */
   useEffect(() => {
-    console.info(comment)
     setCommentInput(comment)
+    console.info("Comment input aligned: ", comment)
   }, [comment]);
 
-
-  function selectedEntry(newId) {
-    if (playlistPage != null) {
-      setSelectedTrack(newId)
-      for (const entry of playlistPage.items) {
-        if (entry.id == newId) {
-          setAlbumThumbSrc(entry.icon);
-          console.log("yeah it works");
-          return
-        }
-        console.log(entry)
-        console.log(newId)
-      }
-      setAlbumThumbSrc(null);
+  /**
+   * [callback] when the selection list component wants to set the new entry
+   * comment (comment) when comment is changed
+   */
+  function selectEntry(newId) {
+    if (playlistPage === null) {
+      console.warn("No playlist data but entry was selected...");
+      return;
     }
+
+    setSelectedTrack(newId)
+    // TODO: below is all album cover image functionality
+    // for (const entry of playlistPage.items) {
+    //   if (entry.id == newId) {
+    //     setAlbumThumbSrc(entry.icon);
+    //     return
+    //   }
+    //   console.log(entry)
+    //   console.log(newId)
+    // }
+    // setAlbumThumbSrc(null);
   }
 
-  useEffect(() => {
-    const check = async () => {
-      try {
+  /**
+   * [command] gets profile and determines logged in status.
+   * 
+   * This furthermore determines whether other elements of the page
+   * should load.
+   */
+  async function activateAccount() {
+    await getProfile()
+    .then((profile) => {
         // TODO: is a window.requestedAuth attr needed?
-        let profile = await getProfile();
-        console.log("[debug] profile retrieved: ", profile)
+        console.info("Profile retrieved: ", profile);
         localStorage.setItem("logged_on", profile.logged_in);
+
         setIsLoggedIn(profile.logged_in);
         setUsername(profile.name);
         setPfp(profile.pfp);
-        // setPlaylist(await get_the_playlist())
-      } catch (err) {
-        console.log(err)
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      })
+      .catch((e) => {
+        setError(e);
+        throw e;
+      })
+      .finally(() => setLoading(false));
+  }
 
-    check();
+  
+  useEffect(() => {
+    activateAccount();
   }, []);
 
+  // ==== Pagination Controls (pageIndex) ====
+
+  /**
+   * [effect] to align the displayed index (pageIndexInput)
+   * with the actual page index (pageIndex) when the page index is updated
+   * 
+   * Happens when the index is saved/sent to backend for processing
+   */
   useEffect(() => {
-    setPageIndexSetter(pageIndex)
+    setPageIndexInput(pageIndex);
+    console.info("Page index aligned: ", pageIndex);
   }, [pageIndex]);
 
+  /**
+   * [callback] when the visual index is modified.
+   */
   function onIndexChange(e) {
     if (e.target.checkValidity()) {
-      setPageIndexSetter(e.target.value);
+      setPageIndexInput(e.target.value);
     }
   }
 
+  /**
+   * [callback] when the visual index is submitted.
+   */
   function onIndexSubmit(e) {
     // this is going to run for onSubmit and onUnblur
     if (e.target.checkValidity()) {
-      setPageIndex(Math.max(1, Math.min(maxPages, pageIndexSetter)));
+      const newIndex = Math.max(1, Math.min(maxPages, pageIndexInput));
+      setPageIndex(newIndex);
+      console.info("Page index set: ", newIndex);
+
+      // the index stays in focus if you press enter; Here we force blur
       e.target.blur();
     }
   }
 
+  /**
+   * [callback] when the [<<] button is pressed
+   */
   function goToFirstPage(e) {
     if (pageIndex > 1) {
+      console.info("Going to first page...");
       setPageIndex(1);
     }
   }
 
+  /**
+   * [callback] when the [>>] button is pressed
+   */
   function goToLastPage(e) {
     if (pageIndex < maxPages) {
+      console.info("Going to last page...");
       setPageIndex(maxPages);
     }
   }
 
+  /**
+   * [callback] when the [<] button is pressed
+   */
   function goToPreviousPage(e) {
     if (pageIndex > 1) {
-      setPageIndex(Math.max(1, Math.min(maxPages, pageIndex - 1)));
+      const newIndex = Math.max(1, Math.min(maxPages, pageIndex - 1));
+      setPageIndex(newIndex);
+      console.info("Moving backward to page ", newIndex, "...")
     }
   }
 
+  /**
+   * [callback] when the [>] button is pressed
+   */
   function goToNextPage(e) {
     if (pageIndex < maxPages) {
-      setPageIndex(Math.max(1, Math.min(maxPages, pageIndex + 1)));
+      const newIndex = Math.max(1, Math.min(maxPages, pageIndex + 1));
+      setPageIndex(newIndex);
+      console.info("Moving forward to page ", newIndex, "...")
     }
   }
 
-  // ==== PLAYLIST STUFF ====
+  // ==== Playlists ====
 
+  /**
+   * [command] on startup, retrieve the saved playlist code
+   */
   async function initialPlaylistGet() {
     const res = await invoke("get_initial_playlist");
     setPlaylist(res);
     console.info("Retrieved initial playlist: ", res);
   }
 
+  /**
+   * [command] get the 'deets' for the current playlist.
+   * This is metadata such as playlist name and entry count.
+   */
   async function getPlaylistDeets() {
-    try {
-      const res = await invoke("get_current_playlist_details");
-      console.info("Retrieved playlist details: ", res);
-      setPlName(res.name);
-      setPlTotal(res.items.total);
-      setPlExists(true);
-    } catch (e) {
-      setPlName("Playlist not found!");
-      setPlTotal(404);
-      setPlExists(false);
-    }
+    await invoke("get_current_playlist_details")
+      .then((res) => {
+        console.info("Retrieved playlist details: ", res);
+        setPlName(res.name);
+        setPlTotal(res.items.total);
+        setPlExists(true);
+      })
+      .catch((e) => {
+        setPlName("Playlist not found!");
+        setPlTotal(404);
+        setPlExists(false);
+        throw e;
+      })
   }
 
+  /**
+   * [command] get the entries of a playlist for the list display.
+   * 
+   * TODO: this takes a really long time (2-4 seconds)
+   */
   async function getPlaylistContents() {
     await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
-      .then((conts) => {
-        // use finally and else
-        if (conts.items.length !== 0) {
-          setSelectedTrack(conts.items[0].id);
+      .then((res) => {
+        if (res.items.length !== 0) {  // pre-set the selected track
+          setSelectedTrack(res.items[0].id);
         } else {
           setSelectedTrack("");
         }
-        setPlaylistPage(conts);
+        setPlaylistPage(res);
         setLoadingPlaylist(false);
         setPlExists(true);
       })
@@ -210,17 +301,30 @@ function App() {
       })
   }
 
+  /**
+   * [effect] gets initial playlist details when logged in
+   */
   useEffect(() => {
-    initialPlaylistGet()
+    if (isLoggedIn) {
+      initialPlaylistGet()
+    }
   }, [isLoggedIn]);
-
+  
+  /**
+   * [effect] aligns textbox playlist url input with real playlist code.
+   * 
+   * TODO: this might not be doing anything (refer to comment in onPlSubmit
+   */
   useEffect(() => {
     setPlaylistInput(playlist || playlistInput);
     if (playlist !== null && isLoggedIn) {
       getPlaylistDeets()
     }
   }, [isLoggedIn, playlist]);
-
+  
+  /**
+   * [effect] updates playlist listing (uuh..) when pageIndex is changed.
+   */
   useEffect(() => {
     if (isLoggedIn && playlist) {
       setLoadingPlaylist(true);
@@ -229,16 +333,21 @@ function App() {
     }
   }, [isLoggedIn, playlist, pageIndex]);
 
+  /**
+   * [callback] update playlist url input
+   */
   function onPlInputChange(e) {
     if (e.target.checkValidity()) {
       setPlaylistInput(e.target.value || "");
     }
   }
 
-  function onPlInputFocus(e) {
-    setPlaylistInput(playlist === null ? playlistInput : `https://open.spotify.com/playlist/${playlist}`);
-  }
-
+  /**
+   * [helper] extracts the code of a playlist from the url.
+   * 
+   * This is used for code display when not editing, and for backend processing
+   * purposes.
+   */
   function getOnlyCode(pl) {
     let code = plPattern.exec(pl);
     if (code === null) {
@@ -252,10 +361,25 @@ function App() {
     }
   }
 
+  /**
+   * [callback] on focus, change input display from the code only, to
+   * the full url for proper editing
+   */
+  function onPlInputFocus(e) {
+    setPlaylistInput(playlist === null ? playlistInput : `https://open.spotify.com/playlist/${playlist}`);
+  }
+
+  /**
+   * [callback] generic submitting for the playlist url input.
+   * This is called when...
+   *   1. input is entered (ENTER key is pressed)
+   *   2. input is blurred (clicked off)
+   */
   async function onPlSubmit(e) {
     // this is going to run for onSubmit and onUnblur
     if (e.target.checkValidity()) {
-      e.target.blur();
+      e.target.blur();  // 'entering' doesn't blur automatically
+
       let code = getOnlyCode(playlistInput);
       if (playlist != code) {
         await invoke("set_playlist", {plCode: code});
@@ -272,6 +396,7 @@ function App() {
 
   let listing = [];
   if (playlistPage) {
+    // processes playlist entries into ones readable by SelectableList
     listing = playlistPage.items.map((entry, index) => {
       const item = {
         index: playlistPage.offset + index + 1,
@@ -291,9 +416,10 @@ function App() {
 
           <div className="header-tab-btn-container">
             <button className="header-tab-btn" type="submit">Home</button>
-            <button className="header-tab-btn" type="submit">Downloads</button>
-            <button className="header-tab-btn" type="submit">Format</button>
+            {/* <button className="header-tab-btn" type="submit">Downloads</button>
+            <button className="header-tab-btn" type="submit">Format</button> */}
             <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogin}>Login</button>
+            <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogOff}>Log Out</button>
           </div>
         </div>
         <div className="login-display">
@@ -301,7 +427,6 @@ function App() {
           <img src={pfp} height="32" width="32" />
         </div>
       </div>
-
       <div className="tab-area">
         <div className="hub">
           {/* <div className="cover-display">
@@ -357,7 +482,7 @@ function App() {
                 <SelectableList
                   id="track-selector-from-playlist"
                   select={selectedTrack}
-                  setSelect={selectedEntry}
+                  setSelect={selectEntry}
                   multiSelect={multiItem}
                   setMultiSelect={setMultiItem}
                   items={listing}
@@ -368,7 +493,7 @@ function App() {
                 <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToPreviousPage}>{"<"}</button>
                 <input
                   type="text"
-                  value={pageIndexSetter}
+                  value={pageIndexInput}
                   onChange={onIndexChange}
                   pattern="\d+"
                   onBlur={onIndexSubmit}

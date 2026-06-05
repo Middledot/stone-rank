@@ -26,6 +26,10 @@ function base64encode(input) {
         .replace(/\//g, '_');
 }
 
+export async function triggerLogOff() {
+    console.error("This function isn't implemented yet ! !! ! !! ! !!!!! ! !!")
+}
+
 export async function triggerLogin() {
     // Three functions above create 'codeVerifier'
     // then encode to send
