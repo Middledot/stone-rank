@@ -23,11 +23,11 @@ pub async fn init_login(
     let mut url = Url::parse("https://accounts.spotify.com/authorize").unwrap();
     const REDIRECT_URI: &str = "http://127.0.0.1:1420/";
 
-    let client_id = env::var("CLIENT_ID").expect("[environment variables] CLIENT_ID must be set");
+    const CLIENT_ID: &str = env!("CLIENT_ID");
 
     url.query_pairs_mut()
         .append_pair("response_type", "code")
-        .append_pair("client_id", &client_id)
+        .append_pair("client_id", CLIENT_ID)
         .append_pair("scope", "playlist-read-private streaming") // should be fine immutable
         .append_pair("code_challenge_method", "S256")
         .append_pair("code_challenge", &code_challenge)
@@ -90,10 +90,10 @@ pub async fn finish_login(
 ) -> Result<String, String> {
     let client = reqwest::Client::new();
 
-    let client_id = env::var("CLIENT_ID").expect("[environment variables] CLIENT_ID must be set");
+    const CLIENT_ID: &str = env!("CLIENT_ID");
 
     let mut params = HashMap::new();
-    params.insert("client_id", client_id);
+    params.insert("client_id", CLIENT_ID.to_string());
     params.insert("grant_type", "authorization_code".to_string());
     params.insert("code", code);
     params.insert("redirect_uri", "http://127.0.0.1:1420/".to_string());
@@ -137,10 +137,10 @@ pub async fn refresh_tokens(retoken: String) -> Result<(String, String), String>
     info!("Retokening...");
     let client = reqwest::Client::new();
 
-    let client_id = env::var("CLIENT_ID").expect("[environment variables] CLIENT_ID must be set");
+    const CLIENT_ID: &str = env!("CLIENT_ID");
 
     let mut params = HashMap::new();
-    params.insert("client_id", client_id);
+    params.insert("client_id", CLIENT_ID.to_string());
     params.insert("grant_type", "refresh_token".to_string());
     params.insert("refresh_token", retoken);
 
