@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Deserialize, Debug)]
 pub struct ApiError {
     pub inner: Error,
@@ -9,26 +8,23 @@ pub struct ApiError {
 #[derive(Deserialize, Debug)]
 pub struct Error {
     pub status: i32,
-    pub message: String
+    pub message: String,
 }
-
 
 #[derive(Serialize, Debug)]
 pub struct PlaylistPage {
     pub limit: i32,
     pub offset: i32,
-    pub items: Vec<PlaylistItem>
+    pub items: Vec<PlaylistItem>,
 }
-
 
 #[derive(Serialize, Debug)]
 pub struct PlaylistItem {
     pub id: String,
     pub title: String,
     pub href: String,
-    pub icon: String
+    pub icon: String,
 }
-
 
 #[derive(Deserialize, Debug)]
 pub struct ImageObjects {
@@ -63,7 +59,7 @@ pub struct GetProfileResponse {
 pub struct GetPlaylistItemsResponse {
     pub limit: i32,
     pub offset: i32,
-    pub items: Vec<SuperItem>
+    pub items: Vec<SuperItem>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -86,7 +82,6 @@ pub struct Album {
     pub name: String,
     pub images: Vec<ImageObjects>,
 }
-
 
 #[derive(Deserialize)]
 pub struct SpotifySuccessfulResponse {

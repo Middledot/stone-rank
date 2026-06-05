@@ -5,7 +5,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub track_id: String,
-    pub comment: String
+    pub comment: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

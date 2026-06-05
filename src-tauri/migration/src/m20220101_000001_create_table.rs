@@ -30,10 +30,9 @@ impl MigrationTrait for Migration {
     }
 }
 
-
 #[derive(DeriveIden)]
 enum Comment {
-    Table,  // don't forget this
+    Table, // don't forget this
     TrackId,
     Comment,
 }

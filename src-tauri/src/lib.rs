@@ -1,15 +1,16 @@
+use sea_orm::{Database, DatabaseConnection};
 use tauri::Manager;
 use tauri::State;
 use tokio::sync::Mutex;
-use sea_orm::{Database, DatabaseConnection};
+use serde_json::Value;
 
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use serde_json::Value;
-use tauri_plugin_store::StoreExt;  // needed to access store
+use tauri_plugin_store::StoreExt; // needed to access store
+use tauri_plugin_log::{Target, TargetKind};
 
 use dotenvy::dotenv;
 use std::env;
@@ -22,10 +23,17 @@ mod db;
 use migration::{Migrator, MigratorTrait};
 
 async fn pick_database(path: &PathBuf) -> Result<DatabaseConnection, sea_orm::DbErr> {
-    let mut database = Database::connect(format!("sqlite://{}/classifier.db?mode=rwc", path.as_os_str().to_str().unwrap())).await.unwrap();
+    let mut database = Database::connect(format!(
+        "sqlite://{}/classifier.db?mode=rwc",
+        path.as_os_str().to_str().unwrap()
+    ))
+    .await
+    .unwrap();
 
     // TODO: verify database has correct fields
-    Migrator::up(&database, None).await.expect("oh no, my migrator broke");
+    Migrator::up(&database, None)
+        .await
+        .expect("oh no, my migrator broke");
 
     Ok(database)
 }
@@ -40,6 +48,20 @@ pub fn run() {
     dotenv().ok();
 
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                .format(|out, message, record| {
+                    out.finish(format_args!(
+                        "[{} {}] {}",
+                        record.level(),
+                        record.target(),
+                        message
+                    ))
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_oauth::init())
@@ -62,20 +84,41 @@ pub fn run() {
                         access_token = None;
                         // store.set("access_token".to_string(), json!("Guest User"));
                     } else {
-                        access_token = Some(store.get("access_token").unwrap().as_str().unwrap().to_string());
+                        access_token = Some(
+                            store
+                                .get("access_token")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                                .to_string(),
+                        );
                     }
 
                     if store.get("refresh_token").is_none() {
                         refresh_token = None;
                         // store.set("refresh_token".to_string(), json!("Guest User"));
                     } else {
-                        refresh_token = Some(store.get("refresh_token").unwrap().as_str().unwrap().to_string());
+                        refresh_token = Some(
+                            store
+                                .get("refresh_token")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                                .to_string(),
+                        );
                     }
 
                     if store.get("playlist_code").is_none() {
                         playlist_code = None;
                     } else {
-                        playlist_code = Some(store.get("playlist_code").unwrap().as_str().unwrap().to_string());
+                        playlist_code = Some(
+                            store
+                                .get("playlist_code")
+                                .unwrap()
+                                .as_str()
+                                .unwrap()
+                                .to_string(),
+                        );
                     }
 
                     let _ = store.save();
@@ -83,9 +126,9 @@ pub fn run() {
                     app_handle.manage(Mutex::new(SessionState {
                         access_token: access_token,
                         refresh_token: refresh_token,
-                        playlist_code: playlist_code,  // read_res["final_list_destination"].to_string()
+                        playlist_code: playlist_code, // read_res["final_list_destination"].to_string()
                         app_data_directory: data_path,
-                        db: Arc::new(Mutex::new(database))
+                        db: Arc::new(Mutex::new(database)),
                     }));
                 }
             });

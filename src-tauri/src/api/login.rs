@@ -1,17 +1,19 @@
+use serde_json::json;
 use std::collections::HashMap;
-use tauri::{State, Window, Emitter};
-use serde_json::{json};
+use tauri::{Emitter, State, Window};
 use tokio::sync::Mutex;
 
 use std::env;
 use url::Url;
 
-use tauri_plugin_store::StoreExt;  // needed to access store
 use tauri_plugin_oauth::{OauthConfig, start_with_config};
+use tauri_plugin_store::StoreExt; // needed to access store
 
 use super::data::{GetProfileResponse, Profile, SpotifySuccessfulResponse};
 
 use crate::state::SessionState;
+
+use log::{debug, error, info};
 
 #[tauri::command]
 pub async fn init_login(
@@ -39,7 +41,7 @@ pub async fn init_login(
 
 fn verify(url: &str) -> Option<String> {
     // TODO: this isn't really verifying the url, just extracting the
-    // code... find way to verify
+    // code... find way to verify (refer to comment at end of function)
     let url = Url::parse(url).ok()?;
     if url.path() != "/" {
         // all this really does that spotify doesn't is block one of the
@@ -52,7 +54,7 @@ fn verify(url: &str) -> Option<String> {
     for (k, v) in url.query_pairs() {
         // reference a dereferenced var?? I'm not sure what this is lmao
         match &*k {
-            "code"  => code = Some(v.into_owned()),
+            "code" => code = Some(v.into_owned()),
             _ => {}
         }
     }
@@ -67,7 +69,7 @@ pub async fn start_response_server(window: Window) -> Result<u16, String> {
     // https://medium.com/@Joshua_50036/implementing-oauth-in-tauri-3c12c3375e04
 
     let cfg = OauthConfig {
-        ports: Some(vec![1420]),     // Multiple ports to avoid conflicts
+        ports: Some(vec![1420]),
         response: Some("OAuth finished. You may close this tab.".into()),
     };
 
@@ -75,7 +77,8 @@ pub async fn start_response_server(window: Window) -> Result<u16, String> {
         if let Some(code) = verify(&url) {
             let _ = window.emit("code", code);
         }
-    }).map_err(|err| err.to_string())
+    })
+    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -111,22 +114,18 @@ pub async fn finish_login(
     } else {
         // response is for sure successful, unwrap and save the contents
         let response = body.unwrap();
-        println!("access_token:\n{}", response.access_token);
-        println!("refresh_token:\n{}", response.refresh_token);
-        println!("token_type:\n{}", response.token_type);
-        println!("scope:\n{}", response.scope);
-        println!("expires_in:\n{}", response.expires_in);
+        debug !("Logged In! -- access_token:\n{}", response.access_token);
+        debug!("Logged In! -- refresh_token:\n{}", response.refresh_token);
+        debug!("Logged In! -- token_type:\n{}", response.token_type);
+        debug!("Logged In! -- scope:\n{}", response.scope);
+        debug!("Logged In! -- expires_in:\n{}", response.expires_in);
 
         let store = app.store("store.json").unwrap();
-        // let access_token: Option<String>;
-        // let refresh_token: Option<String>;
         store.set("access_token", json!(response.access_token.clone()));
         store.set("refresh_token", json!(response.refresh_token.clone()));
-
         let _ = store.save();
 
         let mut state = state.lock().await;
-
         state.access_token = Some(response.access_token);
         state.refresh_token = Some(response.refresh_token);
 
@@ -134,9 +133,8 @@ pub async fn finish_login(
     }
 }
 
-
-pub async fn refresh_tokens(retoken: String) -> Result<(String, String), ()> {
-    println!("Retokening...");
+pub async fn refresh_tokens(retoken: String) -> Result<(String, String), String> {
+    info!("Retokening...");
     let client = reqwest::Client::new();
 
     let client_id = env::var("CLIENT_ID").expect("[environment variables] CLIENT_ID must be set");
@@ -146,21 +144,26 @@ pub async fn refresh_tokens(retoken: String) -> Result<(String, String), ()> {
     params.insert("grant_type", "refresh_token".to_string());
     params.insert("refresh_token", retoken);
 
-    let response = client
+    let response = match client
         .post("https://accounts.spotify.com/api/token")
         .form(&params)
         .send()
-        .await
-        .expect("error");
+        .await {
+            Ok(r) => r,
+            Err(e) => {
+                error!("[retokening] retokening request failed: {}", e);
+                return Err("Retokening failed from base request".to_string());
+            }
+    };
 
     let status = (response.status().as_u16()) as i16;
     let bytes = response.bytes().await.unwrap(); // new solution for debug
 
     if status >= 400 {
-        println!("retokening failed");
-        println!("{:?}", String::from_utf8_lossy(&bytes).into_owned());
-        Err(())
+        error!("[retokening] retokening rejected: {}", String::from_utf8_lossy(&bytes).into_owned());
+        Err("Retokening failed due to error code".to_string())
     } else {
+        // assuming this will always be successful for now
         let body: SpotifySuccessfulResponse = serde_json::from_slice(&bytes).unwrap();
         Ok((body.access_token.clone(), body.refresh_token.clone()))
     }
@@ -184,8 +187,7 @@ pub async fn log_off(
 
     let default = Profile {
         name: "Not Logged In (Jo Doe)".to_string(),
-        pfp: "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
-            .to_string(),
+        pfp: "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg".to_string(),
         logged_in: false,
     };
 
