@@ -8,6 +8,7 @@ pub struct SessionState {
     pub access_token: Option<String>,
     pub refresh_token: Option<String>,
     pub playlist_code: Option<String>,
+    #[allow(dead_code)]
     pub app_data_directory: PathBuf,
     pub db: Arc<Mutex<DatabaseConnection>>,
 }

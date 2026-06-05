@@ -1,16 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug)]
-pub struct ApiError {
-    pub inner: Error,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Error {
-    pub status: i32,
-    pub message: String,
-}
-
 #[derive(Serialize, Debug)]
 pub struct PlaylistPage {
     pub limit: i32,
@@ -28,7 +17,9 @@ pub struct PlaylistItem {
 
 #[derive(Deserialize, Debug)]
 pub struct ImageObjects {
+    #[allow(dead_code)]
     pub height: i32,
+    #[allow(dead_code)]
     pub width: i32,
     pub url: String,
 }
@@ -47,9 +38,10 @@ pub struct PlaylistDeetsItems {
 #[derive(Deserialize, Debug)]
 pub struct GetProfileResponse {
     pub display_name: String,
-    // href: String,
+    #[allow(dead_code)]
     pub id: String,
     pub images: Vec<ImageObjects>,
+    // href: String,
     // external_urls: ExternalURLsResponse,
     // followers: Option<FollowersResponse>,
 }
@@ -77,8 +69,11 @@ pub struct Item {
 
 #[derive(Deserialize, Debug)]
 pub struct Album {
+    #[allow(dead_code)]
     pub id: Option<String>,
+    #[allow(dead_code)]
     pub href: Option<String>,
+    #[allow(dead_code)]
     pub name: String,
     pub images: Vec<ImageObjects>,
 }
@@ -102,6 +97,17 @@ pub struct Profile {
     pub logged_in: bool, // external_urls: ExternalURLsResponse,
                          // followers: Option<FollowersResponse>,
 }
+
+// #[derive(Deserialize, Debug)]
+// pub struct ApiError {
+//     pub inner: Error,
+// }
+
+// #[derive(Deserialize, Debug)]
+// pub struct Error {
+//     pub status: i32,
+//     pub message: String,
+// }
 
 // #[derive(Deserialize)]
 // struct ExternalURLsResponse {

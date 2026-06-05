@@ -9,7 +9,7 @@ use url::Url;
 use tauri_plugin_oauth::{OauthConfig, start_with_config};
 use tauri_plugin_store::StoreExt; // needed to access store
 
-use super::data::{GetProfileResponse, Profile, SpotifySuccessfulResponse};
+use super::data::{Profile, SpotifySuccessfulResponse};
 
 use crate::state::SessionState;
 

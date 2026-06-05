@@ -1,16 +1,11 @@
 use sea_orm::{Database, DatabaseConnection};
 use tauri::Manager;
-use tauri::State;
 use tokio::sync::Mutex;
-use serde_json::Value;
 
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use tauri_plugin_store::StoreExt; // needed to access store
-use tauri_plugin_log::{Target, TargetKind};
 
 use dotenvy::dotenv;
 use std::env;
@@ -23,7 +18,7 @@ mod db;
 use migration::{Migrator, MigratorTrait};
 
 async fn pick_database(path: &PathBuf) -> Result<DatabaseConnection, sea_orm::DbErr> {
-    let mut database = Database::connect(format!(
+    let database = Database::connect(format!(
         "sqlite://{}/classifier.db?mode=rwc",
         path.as_os_str().to_str().unwrap()
     ))
@@ -40,10 +35,6 @@ async fn pick_database(path: &PathBuf) -> Result<DatabaseConnection, sea_orm::Db
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let file = File::open("CONFIG.json").expect("gng");
-    let reader = BufReader::new(file);
-    let read_res: Value = serde_json::from_reader(reader).expect("crap");
-
     // TODO: this is most likely redundant
     dotenv().ok();
 
@@ -126,7 +117,7 @@ pub fn run() {
                     app_handle.manage(Mutex::new(SessionState {
                         access_token: access_token,
                         refresh_token: refresh_token,
-                        playlist_code: playlist_code, // read_res["final_list_destination"].to_string()
+                        playlist_code: playlist_code,
                         app_data_directory: data_path,
                         db: Arc::new(Mutex::new(database)),
                     }));
@@ -142,12 +133,12 @@ pub fn run() {
             api::calls::set_playlist,
             api::calls::get_current_playlist_details,
             api::calls::get_playlist_items,
+            api::calls::get_comment,
+            api::calls::save_comment,
             api::login::init_login,
             api::login::finish_login,
             api::login::log_off,
             api::login::start_response_server,
-            api::calls::save_comment,
-            api::calls::get_comment
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

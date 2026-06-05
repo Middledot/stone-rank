@@ -1,23 +1,18 @@
-use bytes::Bytes;
-use std::collections::HashMap;
-use std::env;
-
 use serde_json::json;
 use tauri::State;
 use tauri_plugin_store::StoreExt; // needed to access store
 use tokio::sync::{Mutex, MutexGuard};
-use url::Url;
 
 use super::data::{
     GetPlaylistItemsResponse, GetProfileResponse, PlaylistItem, PlaylistPage, Profile,
 };
 use super::login::refresh_tokens;
-use crate::api::data::{ApiError, GetPlaylistDeetsResponse};
+use crate::api::data::{GetPlaylistDeetsResponse};
 use crate::db;
 use crate::state::SessionState;
 use reqwest::header::AUTHORIZATION;
 
-use sea_orm::{ActiveModelTrait, EntityTrait, ModelTrait, Set};
+use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 
 use log::{debug, info, error};
 
@@ -69,7 +64,7 @@ async fn call_with_state(
     }
 
     let mut response = call(url.clone(), token.clone(), params.clone()).await;
-    let mut headers = response.headers();
+    let headers = response.headers();
     let mut status = (response.status().as_u16()) as i16;
 
     // this part is for retokening/token refresh
@@ -100,7 +95,7 @@ async fn call_with_state(
             state.refresh_token = Some(new_retoken);
 
             response = call(url.clone(), token.clone(), params.clone()).await; // I can use it (? operator) here!! cuz it propogates to the upper functions Result response!!!!!
-            headers = response.headers();
+            // headers = response.headers();  // unused
             status = (response.status().as_u16()) as i16;
         }
     }
@@ -323,7 +318,7 @@ pub async fn get_comment(
     state: State<'_, Mutex<SessionState>>,
     track_id: String,
 ) -> Result<String, String> {
-    let mut state = state.lock().await;
+    let state = state.lock().await;
     let classifier = state.db.lock().await;
 
     let res_comment: Option<db::comment::Model>
@@ -350,7 +345,7 @@ pub async fn save_comment(
     track_id: String,
     comment: String,
 ) -> Result<bool, String> {
-    let mut state = state.lock().await;
+    let state = state.lock().await;
     let classifier = state.db.lock().await;
 
     if comment.len() == 0 {
@@ -375,7 +370,7 @@ pub async fn save_comment(
             }
         };
 
-        if let Some(mut record) = db_record {
+        if let Some(record) = db_record {
             // record exists; update
             let mut record: db::comment::ActiveModel = record.into();
             record.comment = Set(comment);
