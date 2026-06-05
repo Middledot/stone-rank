@@ -101,6 +101,7 @@ pub fn run() {
             api::calls::get_playlist_items,
             api::login::init_login,
             api::login::finish_login,
+            api::login::log_off,
             api::login::start_response_server,
             api::calls::save_comment,
             api::calls::get_comment

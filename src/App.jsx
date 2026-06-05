@@ -30,8 +30,8 @@ function App() {
   const [playlist, setPlaylist] = useState("6kBCzasJ5DH01MDB3bLPZV");
   const [playlistInput, setPlaylistInput] = useState("6kBCzasJ5DH01MDB3bLPZV");
 
-  const [plTotal, setPlTotal] = useState(0);
-  const [plName, setPlName] = useState("default playlist name");
+  const [plTotal, setPlTotal] = useState(401);
+  const [plName, setPlName] = useState("no playlist");
 
   const [loadingPlaylist, setLoadingPlaylist] = useState(true);
   const [plExists, setPlExists] = useState(true);
@@ -160,6 +160,27 @@ function App() {
       .finally(() => setLoading(false));
   }
 
+  /**
+   * [callback] logs out and deletes profile, deselects everything.
+   */
+  async function deactivateAccount(e) {
+    setLoading(true);
+    await triggerLogOff()
+      .then((profile) => {
+        localStorage.setItem("logged_on", profile.logged_in);
+
+        setIsLoggedIn(profile.logged_in);
+        setUsername(profile.name);
+        setPfp(profile.pfp);
+
+        setSelectedTrack("");
+      })
+      .catch((e) => {
+        setError(e);
+        throw e;
+      })
+      .finally(() => setLoading(false));
+  }
   
   useEffect(() => {
     activateAccount();
@@ -319,6 +340,10 @@ function App() {
     setPlaylistInput(playlist || playlistInput);
     if (playlist !== null && isLoggedIn) {
       getPlaylistDeets()
+    } else {
+      setPlName("no playlist");
+      setPlTotal(401);
+      setPlExists(true);
     }
   }, [isLoggedIn, playlist]);
   
@@ -419,7 +444,7 @@ function App() {
             {/* <button className="header-tab-btn" type="submit">Downloads</button>
             <button className="header-tab-btn" type="submit">Format</button> */}
             <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogin}>Login</button>
-            <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogOff}>Log Out</button>
+            <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={deactivateAccount}>Log Out</button>
           </div>
         </div>
         <div className="login-display">
@@ -533,7 +558,7 @@ function App() {
                 onChange={onCommentChange}
                 onBlur={onCommentBlur}
                 value={commentInput}
-                disabled={!plExists || loadingPlaylist}
+                disabled={!isLoggedIn || !plExists || loadingPlaylist}
               />
             </div>
           </div>

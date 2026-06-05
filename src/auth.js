@@ -27,7 +27,7 @@ function base64encode(input) {
 }
 
 export async function triggerLogOff() {
-    console.error("This function isn't implemented yet ! !! ! !! ! !!!!! ! !!")
+    return await invoke("log_off");
 }
 
 export async function triggerLogin() {

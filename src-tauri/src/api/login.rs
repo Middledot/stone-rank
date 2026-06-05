@@ -166,3 +166,28 @@ pub async fn refresh_tokens(retoken: String) -> Result<(String, String), ()> {
     }
 }
 
+#[tauri::command]
+pub async fn log_off(
+    app: tauri::AppHandle,
+    state: State<'_, Mutex<SessionState>>,
+) -> Result<Profile, String> {
+    let store = app.store("store.json").unwrap();
+    store.set("access_token", json!(None::<String>));
+    store.set("refresh_token", json!(None::<String>));
+
+    let _ = store.save();
+
+    let mut state = state.lock().await;
+
+    state.access_token = None;
+    state.refresh_token = None;
+
+    let default = Profile {
+        name: "Not Logged In (Jo Doe)".to_string(),
+        pfp: "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
+            .to_string(),
+        logged_in: false,
+    };
+
+    return Ok(default);
+}
