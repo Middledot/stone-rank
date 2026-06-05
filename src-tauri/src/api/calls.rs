@@ -94,7 +94,7 @@ async fn call_with_state(
             state.access_token = Some(new_token);
             state.refresh_token = Some(new_retoken);
 
-            response = call(url.clone(), token.clone(), params.clone()).await; // I can use it (? operator) here!! cuz it propogates to the upper functions Result response!!!!!
+            response = call(url.clone(), state.access_token.clone().unwrap(), params.clone()).await; // I can use it (? operator) here!! cuz it propogates to the upper functions Result response!!!!!
             // headers = response.headers();  // unused
             status = (response.status().as_u16()) as i16;
         }
