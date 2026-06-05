@@ -37,6 +37,7 @@ sea-orm = { version = "2.0.0-rc", features = ["sqlx-sqlite", "runtime-tokio-nati
 migration = { path = "migration" }
 tauri-plugin-log = "2"
 log = "0.4"
+camino = "1.2.2"
 
 [dependencies.sea-orm-migration]
 version = "2.0.0-rc.40"

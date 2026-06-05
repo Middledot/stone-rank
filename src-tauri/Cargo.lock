@@ -5192,6 +5192,7 @@ name = "stone-rank"
 version = "1.0.0"
 dependencies = [
  "bytes",
+ "camino",
  "dotenvy",
  "log",
  "migration",

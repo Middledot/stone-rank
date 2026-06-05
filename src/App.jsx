@@ -27,8 +27,8 @@ function App() {
   const [pageIndex, setPageIndex] = useState(1);
   const [pageIndexInput, setPageIndexInput] = useState(1);
 
-  const [playlist, setPlaylist] = useState("6kBCzasJ5DH01MDB3bLPZV");
-  const [playlistInput, setPlaylistInput] = useState("6kBCzasJ5DH01MDB3bLPZV");
+  const [playlist, setPlaylist] = useState(null);
+  const [playlistInput, setPlaylistInput] = useState("");
 
   const [plTotal, setPlTotal] = useState(401);
   const [plName, setPlName] = useState("no playlist");
@@ -343,7 +343,7 @@ function App() {
     } else {
       setPlName("no playlist");
       setPlTotal(401);
-      setPlExists(true);
+      setPlExists(false);
     }
   }, [isLoggedIn, playlist]);
   

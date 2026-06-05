@@ -1,6 +1,7 @@
 use sea_orm::{Database, DatabaseConnection};
 use tauri::Manager;
 use tokio::sync::Mutex;
+use camino::Utf8PathBuf;
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -16,13 +17,22 @@ mod db;
 
 use migration::{Migrator, MigratorTrait};
 
-async fn pick_database(path: &PathBuf) -> Result<DatabaseConnection, sea_orm::DbErr> {
-    let database = Database::connect(format!(
+async fn pick_database(path: PathBuf) -> Result<DatabaseConnection, sea_orm::DbErr> {
+    let utf8_path = Utf8PathBuf::from_path_buf(path).unwrap();
+
+    let new_path = utf8_path.components()
+        .map(|c| c.as_str())
+        .collect::<Vec<&str>>()
+        .join("/");
+
+    let str_path = format!(
         "sqlite://{}/classifier.db?mode=rwc",
-        path.as_os_str().to_str().unwrap()
-    ))
-    .await
-    .unwrap();
+        new_path
+    );
+
+    let database = Database::connect(str_path)
+        .await
+        .unwrap();
 
     // TODO: verify database has correct fields
     Migrator::up(&database, None)
@@ -70,7 +80,7 @@ pub fn run() {
             let data_path = app.path().app_data_dir().unwrap();
             tauri::async_runtime::spawn(async move {
                 if let Ok(store) = app_handle.store("store.json") {
-                    let database = pick_database(&data_path).await.expect("doesn't work");
+                    let database = pick_database(data_path.clone()).await.expect("doesn't work");
 
                     let access_token: Option<String>;
                     let refresh_token: Option<String>;
