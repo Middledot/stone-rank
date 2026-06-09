@@ -13,6 +13,7 @@ pub struct PlaylistItem {
     pub title: String,
     pub href: String,
     pub icon: String,
+    pub artist: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -64,6 +65,7 @@ pub struct Item {
     pub id: Option<String>,
     pub href: Option<String>,
     pub name: String,
+    pub artists: Vec<Artist>,
     pub album: Album,
 }
 
@@ -76,6 +78,11 @@ pub struct Album {
     #[allow(dead_code)]
     pub name: String,
     pub images: Vec<ImageObjects>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Artist {
+    pub name: String,
 }
 
 #[derive(Deserialize)]

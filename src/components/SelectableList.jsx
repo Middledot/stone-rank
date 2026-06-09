@@ -30,8 +30,16 @@ function SLItem(
   return (
     <li data-id={i.id} className={classList} onClick={onClick}>
       <div className="index">{i.index}</div>
+      <div className="cover">
+        {(i.cover != null && i.cover.length != 0) &&
+          <img src={i.cover} />
+        }
+      </div>
       <div className="disp">
-        {i.display}
+        <p>{i.display}</p>
+      </div>
+      <div className="artist">
+        {i.artist}
       </div>
     </li>
   );

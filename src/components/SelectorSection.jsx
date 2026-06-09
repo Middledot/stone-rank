@@ -188,7 +188,7 @@ function SelectorSection(
         if (res.items.length !== 0) {  // pre-set the selected track
           setSelectedTrack(res.items[0].id);
         } else {
-          setSelectedTrack("");
+          setSelectedTrack(null);
         }
         setPlaylistPage(res);
         setLoadingPlaylist(false);
@@ -196,7 +196,7 @@ function SelectorSection(
       })
       .catch((e) => {
         setPlaylistPage(null);
-        setSelectedTrack("");
+        setSelectedTrack(null);
         setLoadingPlaylist(false);
         setPlExists(false);
         throw e;
@@ -308,7 +308,9 @@ function SelectorSection(
       const item = {
         index: playlistPage.offset + index + 1,
         id: entry.id,
-        display: entry.title
+        display: entry.title,
+        cover: entry.icon,
+        artist: entry.artist
       }
       return item
     })
@@ -377,6 +379,5 @@ function SelectorSection(
     </div>
   );
 }
-
 
 export default SelectorSection;

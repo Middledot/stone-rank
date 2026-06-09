@@ -283,6 +283,14 @@ pub async fn get_playlist_items(
                                     .clone()
                                     .unwrap_or(uuid::Uuid::new_v4().hyphenated().to_string()),
                                 title: i.item.name.clone(),
+                                artist: {
+                                    let artists = &i.item.artists;
+                                    if artists.len() == 0 {
+                                        "Didn't Find Artist :(".to_string()
+                                    } else {
+                                        artists[0].name.clone()
+                                    }
+                                },
                                 href: i
                                     .item
                                     .href

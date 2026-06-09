@@ -2,30 +2,64 @@
   list-style-type: none;
   list-style-position: outside;
   padding: 0;
-  margin: 5px;
+  margin: 0;
+  /* margin: 5px; */
   text-align: left;
   user-select: none;
   -moz-user-select: none;
   -webkit-user-select: none;
-  width: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: none;
 }
 
 .selectable-list-entry {
   padding: 0;
+  /* margin: 2px 0; */
   font-size: 10px;
   cursor: pointer;
-  margin: 2px 0;
+  display: grid;
+  grid-template-areas:
+  "index coverimg title artist";
+  grid-template-columns: 1fr 2fr 10fr 5fr;
+  grid-template-rows: 1fr;
+  max-height: 40px;
+}
+
+.selectable-list-entry div {
   display: flex;
-  flex-direction: row;
-  height: auto;
+  align-items: center;
 }
 
 .selectable-list-entry .index {
   padding: 5px;
+  grid-area: index;
 }
+
+.selectable-list-entry .cover {
+  grid-area: coverimg;
+  min-width: 0;
+  min-height: 0;
+}
+
+.selectable-list-entry .cover img {
+  object-fit: contain;
+  height: 100%;
+}
+
 .selectable-list-entry .disp {
-  text-overflow: clip;
-  padding: 5px;
+  grid-area: title;
+  margin: 0 10px;
+  overflow-x: hidden;
+}
+
+.selectable-list-entry .disp p {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.selectable-list-entry .artist {
+  grid-area: artist;
 }
 
 .selectable-list-entry.selected {
