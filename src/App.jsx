@@ -6,8 +6,10 @@ import { triggerLogin, triggerLogOff, getProfile, getPlaylistContents } from "./
 import "./App.css";
 import TextEditor from "./TextEditor.jsx"
 import SelectableList from "./components/SelectableList.jsx";
+import LazySelectorList from "./LazySelectorList.jsx";
 import CommentSection from "./components/CommentSection.jsx";
 import { LoginContext } from "./contexts.js";
+import PreviewSection from "./components/PreviewSection.jsx";
 
 const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
 
@@ -409,11 +411,7 @@ function App() {
               <p>No song selected</p>
               }
             </div> */}
-            <div className="integrated-player">
-              {/* <h2 className="section-title">Spotify Player</h2> */}
-              {/* <button id="togglePlay" onClick={onPlayToggle}>Toggle Play</button> */}
-              <iframe style={{border: "none", }} src={`https://open.spotify.com/embed/track/${selectedTrack}?utm_source=generator`} width="100%" height="100%" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-            </div>
+            <PreviewSection selectedTrack={selectedTrack} />
             {/* <div className="source-selector">
               <h2 className="section-title">Player Picker</h2>
             </div> */}
@@ -439,7 +437,7 @@ function App() {
               {(isLoggedIn) &&
               <>
                 <div className="list-container">
-                  {(!plExists || loadingPlaylist) &&
+                  {(selectedTrack === null) &&
                     <div className="playlist-load-notifier">
                       {[...Array(15)].map((_) => {
                         return plExists
@@ -458,8 +456,8 @@ function App() {
                   />
                 </div>
                 <div className="pagination-options">
-                  <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToFirstPage}>{"<<"}</button>
-                  <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToPreviousPage}>{"<"}</button>
+                  <button disabled={pageIndex <= 1 || selectedTrack === null} onClick={goToFirstPage}>{"<<"}</button>
+                  <button disabled={pageIndex <= 1 || selectedTrack === null} onClick={goToPreviousPage}>{"<"}</button>
                   <input
                     type="text"
                     value={pageIndexInput}
@@ -468,10 +466,10 @@ function App() {
                     onBlur={onIndexSubmit}
                     onKeyDown={submitOnEnter(onIndexSubmit)}
                     onSubmit={onIndexSubmit}
-                    disabled={!plExists || loadingPlaylist}
+                    disabled={selectedTrack === null}
                   />
-                  <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToNextPage}>{">"}</button>
-                  <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToLastPage}>{">>"}</button>
+                  <button disabled={pageIndex >= maxPages || selectedTrack === null} onClick={goToNextPage}>{">"}</button>
+                  <button disabled={pageIndex >= maxPages || selectedTrack === null} onClick={goToLastPage}>{">>"}</button>
                 </div>
                 <div className="pagination-pages-num">{maxPages} Pages</div>
               </>
