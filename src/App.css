@@ -101,10 +101,10 @@ body {
 .hub {
   display: grid;
   grid-template-areas:
-    "unranked player player"
-    "unranked text text";
+    "unranked player"
+    "unranked text";
   grid-template-rows: 1fr 1fr;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   min-height: 0;
   width: 100%;
   height: 100%;
@@ -213,7 +213,7 @@ body {
   grid-area: unranked;
   background-color: bisque;
   width: auto;
-  padding: 20px;
+  padding: 10px 0;
   height: auto;
   display: flex;
   flex-direction: column;
@@ -223,7 +223,7 @@ body {
   background-color: white;
   padding: 0;
   margin: 0;
-  overflow: scroll;
+  overflow-y: scroll;
   display: inline-block;
   height: 100%;
   width: 100%;
