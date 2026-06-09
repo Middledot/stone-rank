@@ -5,7 +5,9 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { triggerLogin, triggerLogOff, getProfile, getPlaylistContents } from "./auth.js"
 import "./App.css";
 import TextEditor from "./TextEditor.jsx"
-import SelectableList from "./SelectableList.jsx";
+import SelectableList from "./components/SelectableList.jsx";
+import CommentSection from "./components/CommentSection.jsx";
+import { LoginContext } from "./contexts.js";
 
 const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
 
@@ -39,12 +41,7 @@ function App() {
   const [playlistPage, setPlaylistPage] = useState(null);
   const maxPages = Math.ceil(plTotal/ENTRIES_PER_PAGE)
 
-  const [comment, setComment] = useState("testing");
-  const [commentInput, setCommentInput] = useState("testing");
-  const [commentSaving, setCommentSaving] = useState(0);
-  const [commentSavingTimeout, setCommentSavingTimeout] = useState(null);
-
-  const [selectedTrack, setSelectedTrack] = useState("");
+  const [selectedTrack, setSelectedTrack] = useState(null);
   const [multiItem, setMultiItem] = useState([]);  // dud for now
 
   const [loading, setLoading] = useState(true);
@@ -56,62 +53,6 @@ function App() {
 
   // https://f4.bcbits.com/img/a0401863863_16.jpg
   // const [albumThumbSrc, setAlbumThumbSrc] = useState(null)
-
-  // === Comments ===
-
-  /**
-   * [callback] for when text is typed into the textarea
-   */
-  function onCommentChange(e) {
-    setCommentInput(e.target.value || "");
-  }
-
-  /**
-   * [callback] for when the comment textarea is deselected (event is called onBlur).
-   * This will save the text written in the input.
-   * 
-   * This is also triggered when another track is selected from the list.
-   */
-  function onCommentBlur(e) {
-    setCommentSaving(1);
-    console.info("Saving comment...")
-    return invoke("save_comment", {trackId: selectedTrack, comment: commentInput})
-      .then((r) => {
-        setComment(commentInput);
-        console.info("Comment saved with backend response: ", r);
-
-        setCommentSaving(2);
-        clearTimeout(commentSavingTimeout);
-        setCommentSavingTimeout(setTimeout(() => setCommentSaving(0), 5000));
-      });
-  }
-
-  /**
-   * [command] that retrieves a comment from the backend.
-   */
-  async function getComment() {
-    const text = await invoke("get_comment", {trackId: selectedTrack});
-    setComment(text)
-    console.info("Retrieved comment: ", text)
-  }
-
-  /**
-   * [effect] that changes the comment when the selected track is changed.
-   */
-  useEffect(() => {
-    console.info("Selected track changed! Retrieving comment...")
-    getComment();
-  }, [selectedTrack]);
-
-
-  /**
-   * [effect] that aligns the input state (commentInput) with the real, saved
-   * comment (comment) when comment is changed
-   */
-  useEffect(() => {
-    setCommentInput(comment)
-    console.info("Comment input aligned: ", comment)
-  }, [comment]);
 
   /**
    * [callback] when the selection list component wants to set the new entry
@@ -337,6 +278,7 @@ function App() {
    * TODO: this might not be doing anything (refer to comment in onPlSubmit
    */
   useEffect(() => {
+    setSelectedTrack(null);
     setPlaylistInput(playlist || playlistInput);
     if (playlist !== null && isLoggedIn) {
       getPlaylistDeets()
@@ -352,9 +294,11 @@ function App() {
    */
   useEffect(() => {
     if (isLoggedIn && playlist) {
+      setSelectedTrack(null);
       setLoadingPlaylist(true);
       setPlExists(true);
-      getPlaylistContents()
+      getPlaylistContents();
+      setPlaylistInput(playlist || playlistInput);
     }
   }, [isLoggedIn, playlist, pageIndex]);
 
@@ -411,8 +355,9 @@ function App() {
         setPlaylist(code);
       }
 
-      // this is needed (the useEffect above doesn't change it back)
-      setPlaylistInput(code || playlistInput);
+      // // this is needed (the useEffect above doesn't change it back)
+      // setPlaylistInput(code || playlistInput);
+      // setSelectedTrack(null);
     }
   }
 
@@ -434,136 +379,115 @@ function App() {
 
   return (
     <main className="higher-power">
-      {/*<script src="https://sdk.scdn.co/spotify-player.js"></script>*/}
-      <div className="header">
-        <div className="title-and-tabs">
-          <h1>StoneRank</h1>
-
-          <div className="header-tab-btn-container">
-            <button className="header-tab-btn" type="submit">Home</button>
-            {/* <button className="header-tab-btn" type="submit">Downloads</button>
-            <button className="header-tab-btn" type="submit">Format</button> */}
-            <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogin}>Login</button>
-            <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={deactivateAccount}>Log Out</button>
-          </div>
-        </div>
-        <div className="login-display">
-          <p>{username}</p>
-          <img src={pfp} height="32" width="32" />
-        </div>
-      </div>
-      <div className="tab-area">
-        <div className="hub">
-          {/* <div className="cover-display">
-            <h2 className="section-title">Album Cover</h2>
-            {albumThumbSrc !== null ?
-            <img
-              className="cover-display-image"
-              src={albumThumbSrc}
-            />
-            :
-            <p>No song selected</p>
-            }
-          </div> */}
-          <div className="integrated-player">
-            {/* <h2 className="section-title">Spotify Player</h2> */}
-            {/* <button id="togglePlay" onClick={onPlayToggle}>Toggle Play</button> */}
-            <iframe style={{border: "none", }} src={`https://open.spotify.com/embed/track/${selectedTrack}?utm_source=generator`} width="100%" height="100%" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-          </div>
-          {/* <div className="source-selector">
-            <h2 className="section-title">Player Picker</h2>
-          </div> */}
-          <div className="unranked-list">
-            {/* <h2 className="section-title">Unranked List</h2> */}
-            <div className="playlist-header">
-              <div className="playlist-input">
-                <label>Playlist: </label>
-                <input
-                  type="text"
-                  value={playlistInput}
-                  title="Current playlist url. Paste a new one in if needed!"
-                  onChange={onPlInputChange}
-                  onFocus={onPlInputFocus}
-                  onBlur={onPlSubmit}
-                  onKeyDown={submitOnEnter(onPlSubmit)}
-                  onSubmit={onPlSubmit}
-                />
-              </div>
-              <div>Playlist Name: {plName}</div>
-              <div>Count: {plTotal}</div>
+      <LoginContext value={isLoggedIn}>
+        <div className="header">
+          <div className="title-and-tabs">
+            <h1>StoneRank</h1>
+            <div className="header-tab-btn-container">
+              <button className="header-tab-btn" type="submit">Home</button>
+              {/* <button className="header-tab-btn" type="submit">Downloads</button>
+              <button className="header-tab-btn" type="submit">Format</button> */}
+              <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={triggerLogin}>Login</button>
+              <button className="header-tab-btn header-tab-btn-login" type="submit" onClick={deactivateAccount}>Log Out</button>
             </div>
-            {(isLoggedIn) &&
-            <>
-              <div className="list-container">
-                {(!plExists || loadingPlaylist) &&
-                  <div className="playlist-load-notifier">
-                    {[...Array(15)].map((_) => {
-                      return plExists
-                        ? <div key={crypto.randomUUID()}>Loading Playlist...</div>
-                        : <div key={crypto.randomUUID()}>Error!!</div>
-                      })}
-                  </div>
-                }
-                <SelectableList
-                  id="track-selector-from-playlist"
-                  select={selectedTrack}
-                  setSelect={selectEntry}
-                  multiSelect={multiItem}
-                  setMultiSelect={setMultiItem}
-                  items={listing}
-                />
-              </div>
-              <div className="pagination-options">
-                <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToFirstPage}>{"<<"}</button>
-                <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToPreviousPage}>{"<"}</button>
-                <input
-                  type="text"
-                  value={pageIndexInput}
-                  onChange={onIndexChange}
-                  pattern="\d+"
-                  onBlur={onIndexSubmit}
-                  onKeyDown={submitOnEnter(onIndexSubmit)}
-                  onSubmit={onIndexSubmit}
-                  disabled={!plExists || loadingPlaylist}
-                />
-                <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToNextPage}>{">"}</button>
-                <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToLastPage}>{">>"}</button>
-              </div>
-              <div className="pagination-pages-num">{maxPages} Pages</div>
-            </>
-            }
           </div>
-          {/* <div className="ranked-list">
-            <h2 className="section-title">Ranked List</h2>
-            <ul></ul>
-          </div> */}
-          <div className="text-modifier">
-            <div className="text-modifier-header">
-              <h2>Comment Editor</h2>
-              {commentSaving != 0 && (
-                commentSaving == 1 ?
-                <div className="save-icon">
-                  Saving...
+          <div className="login-display">
+            <p>{username}</p>
+            <img src={pfp} height="32" width="32" />
+          </div>
+        </div>
+        <div className="tab-area">
+          <div className="hub">
+            {/* <div className="cover-display">
+              <h2 className="section-title">Album Cover</h2>
+              {albumThumbSrc !== null ?
+              <img
+                className="cover-display-image"
+                src={albumThumbSrc}
+              />
+              :
+              <p>No song selected</p>
+              }
+            </div> */}
+            <div className="integrated-player">
+              {/* <h2 className="section-title">Spotify Player</h2> */}
+              {/* <button id="togglePlay" onClick={onPlayToggle}>Toggle Play</button> */}
+              <iframe style={{border: "none", }} src={`https://open.spotify.com/embed/track/${selectedTrack}?utm_source=generator`} width="100%" height="100%" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            </div>
+            {/* <div className="source-selector">
+              <h2 className="section-title">Player Picker</h2>
+            </div> */}
+            <div className="unranked-list">
+              {/* <h2 className="section-title">Unranked List</h2> */}
+              <div className="playlist-header">
+                <div className="playlist-input">
+                  <label>Playlist: </label>
+                  <input
+                    type="text"
+                    value={playlistInput}
+                    title="Current playlist url. Paste a new one in if needed!"
+                    onChange={onPlInputChange}
+                    onFocus={onPlInputFocus}
+                    onBlur={onPlSubmit}
+                    onKeyDown={submitOnEnter(onPlSubmit)}
+                    onSubmit={onPlSubmit}
+                  />
                 </div>
-                :
-                <div className="save-icon">
-                  Saved!
+                <div>Playlist Name: {plName}</div>
+                <div>Count: {plTotal}</div>
+              </div>
+              {(isLoggedIn) &&
+              <>
+                <div className="list-container">
+                  {(!plExists || loadingPlaylist) &&
+                    <div className="playlist-load-notifier">
+                      {[...Array(15)].map((_) => {
+                        return plExists
+                          ? <div key={crypto.randomUUID()}>Loading Playlist...</div>
+                          : <div key={crypto.randomUUID()}>Error!!</div>
+                        })}
+                    </div>
+                  }
+                  <SelectableList
+                    id="track-selector-from-playlist"
+                    select={selectedTrack}
+                    setSelect={selectEntry}
+                    multiSelect={multiItem}
+                    setMultiSelect={setMultiItem}
+                    items={listing}
+                  />
                 </div>
-              )
+                <div className="pagination-options">
+                  <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToFirstPage}>{"<<"}</button>
+                  <button disabled={pageIndex <= 1 || !plExists || loadingPlaylist} onClick={goToPreviousPage}>{"<"}</button>
+                  <input
+                    type="text"
+                    value={pageIndexInput}
+                    onChange={onIndexChange}
+                    pattern="\d+"
+                    onBlur={onIndexSubmit}
+                    onKeyDown={submitOnEnter(onIndexSubmit)}
+                    onSubmit={onIndexSubmit}
+                    disabled={!plExists || loadingPlaylist}
+                  />
+                  <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToNextPage}>{">"}</button>
+                  <button disabled={pageIndex >= maxPages || !plExists || loadingPlaylist} onClick={goToLastPage}>{">>"}</button>
+                </div>
+                <div className="pagination-pages-num">{maxPages} Pages</div>
+              </>
               }
             </div>
-            <hr />
-            <div className="text-editor">
-              <textarea
-                onChange={onCommentChange}
-                onBlur={onCommentBlur}
-                value={commentInput}
-                disabled={!isLoggedIn || !plExists || loadingPlaylist}
-              />
-            </div>
+            {/* <div className="ranked-list">
+              <h2 className="section-title">Ranked List</h2>
+              <ul></ul>
+            </div> */}
+            <CommentSection
+              selectedTrack={selectedTrack}
+            />
           </div>
         </div>
-      </div>
+      </LoginContext>
+      {/*<script src="https://sdk.scdn.co/spotify-player.js"></script>*/}
     </main>
   );
 }

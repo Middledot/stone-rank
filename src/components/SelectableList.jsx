@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, MouseEvent } from 'react';
 
-import "./SelectableList.css";
+import "../compstyle/SelectableList.css";
 
 // type IDType = number | string;
 

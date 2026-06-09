@@ -1,0 +1,51 @@
+.text-modifier {
+  grid-area: text;
+  background-color: white;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: baseline;
+  gap: 0;
+  box-sizing: border-box;
+}
+
+.text-modifier-header {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.text-modifier-header h2 {
+  margin: 0;
+  padding: 0;
+}
+
+.text-modifier-header .save-icon {
+  margin: 0;
+  padding: 0;
+}
+
+.text-modifier hr {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.text-editor {
+  padding: 20px;
+  height: 100%;
+  width: 100%;
+  /* overflow: hidden; */
+  box-sizing: border-box;
+  display: inline-block;
+}
+
+.text-editor textarea {
+  border-width: 1px;
+  height: 100%;
+  width: 100%;
+  resize: none;
+}
