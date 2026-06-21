@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import "../compstyle/SelectorSection.css";
@@ -212,7 +212,6 @@ function SelectorSection({ list }) {
    */
   useEffect(() => {
     list.setSelected([]);
-    setScrollNum(0);
     setPlaylistInput(playlist || playlistInput);
     if (playlist !== null && isLoggedIn) {
       getPlaylistDeets()
@@ -229,7 +228,6 @@ function SelectorSection({ list }) {
   useEffect(() => {
     if (isLoggedIn && playlist) {
       list.setSelected([]);
-      setScrollNum(0);
       setLoadingPlaylist(true);
       setPlExists(true);
       getPlaylistContents();
@@ -307,6 +305,23 @@ function SelectorSection({ list }) {
     })
   }
 
+  const [plScrollTop, setPlScrollTop] = useState(0);
+  const [plScrollBottom, setPlScrollBottom] = useState(0);
+
+  function handleScroll(event) {
+    // The target of the event is the div that is being scrolled
+    setPlScrollTop(event.target.scrollTop);
+    setPlScrollTop(event.target.scrollTop + event.target.offsetHeight);
+    console.log(event.target.scrollTop, "---", event.target.scrollTop + event.target.offsetHeight);
+  };
+
+  const containerRef = useRef(null);
+
+  const scrollToBottom = () => {
+    containerRef.current?.scrollTo({
+      top: containerRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
   return (
@@ -331,7 +346,7 @@ function SelectorSection({ list }) {
       </div>
       {(isLoggedIn) &&
       <>
-        <div className="list-container" onScroll={handleScroll} scrollY={scrollNum}>
+        <div className="list-container" ref={containerRef}  onScroll={handleScroll}>
           {(list.hasNoSelections()) &&
             <div className="playlist-load-notifier">
               {[...Array(15)].map((_) => {

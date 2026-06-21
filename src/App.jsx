@@ -5,7 +5,6 @@ import { appDataDir } from "@tauri-apps/api/path";
 import { triggerLogin, triggerLogOff, getProfile, getPlaylistContents } from "./auth.js"
 import "./App.css";
 import { useSelectableList } from "./components/SelectableList.jsx";
-import LazySelectorList from "./LazySelectorList.jsx";
 import CommentSection from "./components/CommentSection.jsx";
 import { LoginContext } from "./contexts.js";
 import PreviewSection from "./components/PreviewSection.jsx";
