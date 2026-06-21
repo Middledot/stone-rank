@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import "../compstyle/SelectorSection.css";
+import "../compstyle/SelectableList.css";
 import { useLogin } from "../contexts";
-import SelectableList from "./SelectableList";
 
 /**
  * [helper] transforms normal submit callbacks into ones that can
@@ -12,20 +12,13 @@ import SelectableList from "./SelectableList";
  */
 function submitOnEnter(f) {
   return (e) => {
-    if (e.keyCode == 13) {
+    if (e.key == "Enter") {
       return f(e)
     }
   };
 }
 
-function SelectorSection(
-  {
-    selectedTrack,
-    setSelectedTrack,
-    multiItem,
-    setMultiItem,
-  }
-) {
+function SelectorSection({ list }) {
   const isLoggedIn = useLogin();
 
   const ENTRIES_PER_PAGE = 20;
@@ -54,7 +47,7 @@ function SelectorSection(
       return;
     }
 
-    setSelectedTrack(newId)
+    list.toggle(newId)
     // TODO: below is all album cover image functionality
     // for (const entry of playlistPage.items) {
     //   if (entry.id == newId) {
@@ -186,9 +179,9 @@ function SelectorSection(
     await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
       .then((res) => {
         if (res.items.length !== 0) {  // pre-set the selected track
-          setSelectedTrack(res.items[0].id);
+          list.setSelected([res.items[0].id]);
         } else {
-          setSelectedTrack(null);
+          list.setSelected([]);
         }
         setPlaylistPage(res);
         setLoadingPlaylist(false);
@@ -196,7 +189,7 @@ function SelectorSection(
       })
       .catch((e) => {
         setPlaylistPage(null);
-        setSelectedTrack(null);
+        list.setSelected([]);
         setLoadingPlaylist(false);
         setPlExists(false);
         throw e;
@@ -218,7 +211,8 @@ function SelectorSection(
    * TODO: this might not be doing anything (refer to comment in onPlSubmit
    */
   useEffect(() => {
-    setSelectedTrack(null);
+    list.setSelected([]);
+    setScrollNum(0);
     setPlaylistInput(playlist || playlistInput);
     if (playlist !== null && isLoggedIn) {
       getPlaylistDeets()
@@ -234,7 +228,8 @@ function SelectorSection(
    */
   useEffect(() => {
     if (isLoggedIn && playlist) {
-      setSelectedTrack(null);
+      list.setSelected([]);
+      setScrollNum(0);
       setLoadingPlaylist(true);
       setPlExists(true);
       getPlaylistContents();
@@ -294,10 +289,6 @@ function SelectorSection(
         await invoke("set_playlist", {plCode: code});
         setPlaylist(code);
       }
-
-      // // this is needed (the useEffect above doesn't change it back)
-      // setPlaylistInput(code || playlistInput);
-      // setSelectedTrack(null);
     }
   }
 
@@ -315,6 +306,8 @@ function SelectorSection(
       return item
     })
   }
+
+  };
 
   return (
     <div className="unranked-list">
@@ -338,8 +331,8 @@ function SelectorSection(
       </div>
       {(isLoggedIn) &&
       <>
-        <div className="list-container">
-          {(selectedTrack === null) &&
+        <div className="list-container" onScroll={handleScroll} scrollY={scrollNum}>
+          {(list.hasNoSelections()) &&
             <div className="playlist-load-notifier">
               {[...Array(15)].map((_) => {
                 return plExists
@@ -348,18 +341,36 @@ function SelectorSection(
                 })}
             </div>
           }
-          <SelectableList
-            id="track-selector-from-playlist"
-            select={selectedTrack}
-            setSelect={selectEntry}
-            multiSelect={multiItem}
-            setMultiSelect={setMultiItem}
-            items={listing}
-          />
+          <ul id="track-selector-from-playlist" className="selectable-list">
+            {
+              playlistPage && 
+              playlistPage.items.map((entry, index) => 
+                <li
+                  key={entry.id}
+                  data-id={entry.id}
+                  className={"selectable-list-entry" + (list.isSelected(entry.id) ? " selected" : "")}
+                  onClick={(e) => {e.target instanceof HTMLElement && selectEntry(entry.id)}}
+                >
+                  <div className="index">{playlistPage.offset + index + 1}</div>
+                  <div className="cover">
+                    {(entry.icon != null && entry.icon.length != 0) &&
+                      <img src={entry.icon} />
+                    }
+                  </div>
+                  <div className="disp">
+                    <p>{entry.title}</p>
+                  </div>
+                  <div className="artist">
+                    {entry.artist}
+                  </div>
+                </li>
+              )
+            }
+          </ul>
         </div>
         <div className="pagination-options">
-          <button disabled={pageIndex <= 1 || selectedTrack === null} onClick={goToFirstPage}>{"<<"}</button>
-          <button disabled={pageIndex <= 1 || selectedTrack === null} onClick={goToPreviousPage}>{"<"}</button>
+          <button disabled={pageIndex <= 1 || list.hasNoSelections()} onClick={goToFirstPage}>{"<<"}</button>
+          <button disabled={pageIndex <= 1 || list.hasNoSelections()} onClick={goToPreviousPage}>{"<"}</button>
           <input
             type="text"
             value={pageIndexInput}
@@ -368,10 +379,10 @@ function SelectorSection(
             onBlur={onIndexSubmit}
             onKeyDown={submitOnEnter(onIndexSubmit)}
             onSubmit={onIndexSubmit}
-            disabled={selectedTrack === null}
+            disabled={list.hasNoSelections()}
           />
-          <button disabled={pageIndex >= maxPages || selectedTrack === null} onClick={goToNextPage}>{">"}</button>
-          <button disabled={pageIndex >= maxPages || selectedTrack === null} onClick={goToLastPage}>{">>"}</button>
+          <button disabled={pageIndex >= maxPages || list.hasNoSelections()} onClick={goToNextPage}>{">"}</button>
+          <button disabled={pageIndex >= maxPages || list.hasNoSelections()} onClick={goToLastPage}>{">>"}</button>
         </div>
         <div className="pagination-pages-num">{maxPages} Pages</div>
       </>

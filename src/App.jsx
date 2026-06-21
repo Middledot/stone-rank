@@ -4,7 +4,7 @@ import { appDataDir } from "@tauri-apps/api/path";
 
 import { triggerLogin, triggerLogOff, getProfile, getPlaylistContents } from "./auth.js"
 import "./App.css";
-import SelectableList from "./components/SelectableList.jsx";
+import { useSelectableList } from "./components/SelectableList.jsx";
 import LazySelectorList from "./LazySelectorList.jsx";
 import CommentSection from "./components/CommentSection.jsx";
 import { LoginContext } from "./contexts.js";
@@ -14,8 +14,7 @@ import SelectorSection from "./components/SelectorSection.jsx";
 const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
 
 function App() {
-  const [selectedTrack, setSelectedTrack] = useState(null);
-  const [multiItem, setMultiItem] = useState([]);  // dud for now
+  const list = useSelectableList({ multiSelect: false });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,22 +111,17 @@ function App() {
               <p>No song selected</p>
               }
             </div> */}
-            <PreviewSection selectedTrack={selectedTrack} />
+            <PreviewSection selectedTrack={list.selected[0]} />
             {/* <div className="source-selector">
               <h2 className="section-title">Player Picker</h2>
             </div> */}
-            <SelectorSection 
-              selectedTrack={selectedTrack}
-              setSelectedTrack={setSelectedTrack}
-              multiItem={multiItem}
-              setMultiItem={setMultiItem}
-            />
+            <SelectorSection list={list} />
             {/* <div className="ranked-list">
               <h2 className="section-title">Ranked List</h2>
               <ul></ul>
             </div> */}
             <CommentSection
-              selectedTrack={selectedTrack}
+              selectedTrack={list.selected[0]}
             />
           </div>
         </div>
