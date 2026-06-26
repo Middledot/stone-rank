@@ -10,8 +10,6 @@ import { LoginContext } from "./contexts.js";
 import PreviewSection from "./components/PreviewSection.jsx";
 import SelectorSection from "./components/SelectorSection.jsx";
 
-const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
-
 function App() {
   const list = useSelectableList({ multiSelect: false });
 

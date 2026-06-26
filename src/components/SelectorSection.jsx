@@ -18,6 +18,7 @@ function submitOnEnter(f) {
   };
 }
 
+const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
 function SelectorSection({ list }) {
   const isLoggedIn = useLogin();
 
@@ -284,9 +285,11 @@ function SelectorSection({ list }) {
 
       let code = getOnlyCode(playlistInput);
       if (playlist != code) {
-        await invoke("set_playlist", {plCode: code});
         setPlaylist(code);
+        await invoke("set_playlist", {plCode: code});
       }
+
+      setPlaylistInput(code);
     }
   }
 
