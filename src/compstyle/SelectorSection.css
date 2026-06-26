@@ -22,6 +22,11 @@
   overflow: hidden!important;
 }
 
+.list-container:has(div.playlist-load-notifier) > *:not(div.playlist-load-notifier) {
+  overflow: hidden!important;
+  display: none;
+}
+
 .playlist-load-notifier {
   position: relative;
   height: 100%;
@@ -50,21 +55,7 @@
   justify-content: center;
 }
 
-.pagination-options > * {
-  margin: 5px;
-  flex-grow: 0;
-  user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-}
-
 .pagination-options > input {
   width: 40px;
-}
-
-.pagination-pages-num {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  font-size: 12px
+  margin-top: 10px;
 }

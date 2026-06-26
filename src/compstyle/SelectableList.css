@@ -23,6 +23,7 @@
   grid-template-columns: 1fr 2fr 10fr 5fr;
   grid-template-rows: 1fr;
   max-height: 40px;
+  position: relative
 }
 
 .selectable-list-entry div {

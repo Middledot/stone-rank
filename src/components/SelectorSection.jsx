@@ -19,12 +19,14 @@ function submitOnEnter(f) {
 }
 
 const plPattern = /https:\/\/open\.spotify\.com\/playlist\/([a-zA-Z0-9]*)/
+const VIRT_OFFSET = 10
+const ENTRIES_PER_PAGE = 20;
+
 function SelectorSection({ list }) {
   const isLoggedIn = useLogin();
 
-  const ENTRIES_PER_PAGE = 20;
-  const [pageIndex, setPageIndex] = useState(1);
-  const [pageIndexInput, setPageIndexInput] = useState(1);
+  const [index, setIndex] = useState(1);
+  const [indexInput, setIndexInput] = useState(1);
 
   const [playlist, setPlaylist] = useState(null);
   const [playlistInput, setPlaylistInput] = useState("");
@@ -33,22 +35,31 @@ function SelectorSection({ list }) {
   const [plName, setPlName] = useState("no playlist");
 
   const [loadingPlaylist, setLoadingPlaylist] = useState(true);
+  const [lazyLoading, setLazyLoading] = useState([]);
   const [plExists, setPlExists] = useState(true);
 
   const [playlistPage, setPlaylistPage] = useState(null);
-  const maxPages = Math.ceil(plTotal/ENTRIES_PER_PAGE);
+  const [totalList, setTotalList] = useState({});
+
+  const [plScrollTop, setPlScrollTop] = useState(0);
+  const [plScrollBottom, setPlScrollBottom] = useState(0);
+  const scrollContainer = useRef(null);
 
   /**
    * [callback] when the selection list component wants to set the new entry
    * comment (comment) when comment is changed
    */
   function selectEntry(newId) {
-    if (playlistPage === null) {
-      console.warn("No playlist data but entry was selected...");
-      return;
+    // https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object
+    // TODO: this isn't a very good solution... maybe use a reducer?
+    for (const prop in totalList) {
+      if (Object.hasOwn(totalList, prop)) {
+        list.toggle(newId);
+        return;
+      }
     }
+    console.warn("No playlist data but entry was selected...");
 
-    list.toggle(newId)
     // TODO: below is all album cover image functionality
     // for (const entry of playlistPage.items) {
     //   if (entry.id == newId) {
@@ -61,25 +72,14 @@ function SelectorSection({ list }) {
     // setAlbumThumbSrc(null);
   }
 
-  // ==== Pagination Controls (pageIndex) ====
-
-  /**
-   * [effect] to align the displayed index (pageIndexInput)
-   * with the actual page index (pageIndex) when the page index is updated
-   * 
-   * Happens when the index is saved/sent to backend for processing
-   */
-  useEffect(() => {
-    setPageIndexInput(pageIndex);
-    console.info("Page index aligned: ", pageIndex);
-  }, [pageIndex]);
+  // ==== List Index GoTo Controls (index) ====
 
   /**
    * [callback] when the visual index is modified.
    */
   function onIndexChange(e) {
     if (e.target.checkValidity()) {
-      setPageIndexInput(e.target.value);
+      setIndexInput(e.target.value);
     }
   }
 
@@ -89,54 +89,17 @@ function SelectorSection({ list }) {
   function onIndexSubmit(e) {
     // this is going to run for onSubmit and onUnblur
     if (e.target.checkValidity()) {
-      const newIndex = Math.max(1, Math.min(maxPages, pageIndexInput));
-      setPageIndex(newIndex);
+      const newIndex = Math.max(1, Math.min(plTotal, indexInput));
+      setIndex(newIndex);
       console.info("Page index set: ", newIndex);
+
+      scrollContainer.current?.scrollTo({
+        top: (newIndex - 1) * 40,
+        behavior: "instant"
+      })
 
       // the index stays in focus if you press enter; Here we force blur
       e.target.blur();
-    }
-  }
-
-  /**
-   * [callback] when the [<<] button is pressed
-   */
-  function goToFirstPage(e) {
-    if (pageIndex > 1) {
-      console.info("Going to first page...");
-      setPageIndex(1);
-    }
-  }
-
-  /**
-   * [callback] when the [>>] button is pressed
-   */
-  function goToLastPage(e) {
-    if (pageIndex < maxPages) {
-      console.info("Going to last page...");
-      setPageIndex(maxPages);
-    }
-  }
-
-  /**
-   * [callback] when the [<] button is pressed
-   */
-  function goToPreviousPage(e) {
-    if (pageIndex > 1) {
-      const newIndex = Math.max(1, Math.min(maxPages, pageIndex - 1));
-      setPageIndex(newIndex);
-      console.info("Moving backward to page ", newIndex, "...")
-    }
-  }
-
-  /**
-   * [callback] when the [>] button is pressed
-   */
-  function goToNextPage(e) {
-    if (pageIndex < maxPages) {
-      const newIndex = Math.max(1, Math.min(maxPages, pageIndex + 1));
-      setPageIndex(newIndex);
-      console.info("Moving forward to page ", newIndex, "...")
     }
   }
 
@@ -174,27 +137,68 @@ function SelectorSection({ list }) {
   /**
    * [command] get the entries of a playlist for the list display.
    * 
+   * This includes a 'page' parameter to load a particular page, a feature used
+   * by the lazy loading mechanism. Along with it, this function includes checks so
+   * pages aren't doubly loaded (if it's already being loaded, don't load it again).
+   * 
    * TODO: this takes a really long time (2-4 seconds)
    */
-  async function getPlaylistContents() {
-    await invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pageIndex - 1), limit: ENTRIES_PER_PAGE})
+  function getPlaylistContents(pg, lazy = false) {
+    if (lazyLoading.includes(pg)) {
+      return
+    }
+
+    if (lazy) {
+      setLazyLoading([...lazyLoading, pg])
+    } else {
+      setLoadingPlaylist(true)
+    }
+    invoke("get_playlist_items", {offset: ENTRIES_PER_PAGE * (pg - 1), limit: ENTRIES_PER_PAGE})
       .then((res) => {
-        if (res.items.length !== 0) {  // pre-set the selected track
-          list.setSelected([res.items[0].id]);
-        } else {
-          list.setSelected([]);
+        if (list.hasNoSelections()) {
+          if (res.items.length !== 0) {  // pre-set the selected track
+            list.setSelected([res.items[0].id]);
+          } else {
+            list.setSelected([]);
+          }
         }
         setPlaylistPage(res);
-        setLoadingPlaylist(false);
+
+        setTotalList(oldTotal => {
+          let newTotal = {...oldTotal};
+          let index = res.offset + 1;
+          for (let ent of res.items) {
+            newTotal[index] = ent
+            index += 1;
+          }
+
+          return newTotal;
+        })
         setPlExists(true);
       })
       .catch((e) => {
         setPlaylistPage(null);
         list.setSelected([]);
-        setLoadingPlaylist(false);
         setPlExists(false);
         throw e;
       })
+      .finally(() => {
+        if (lazy) {
+          setLazyLoading((lazyLoaded) => {
+            // TODO: this sounds like it'd be slow.... but might be fine in this case
+            let newLazy = [];
+            for (let ind of lazyLoaded) {
+              if (ind === pg) continue;
+              // if (newLazy.includes(ind)) continue; // should never happen anyways right?
+              newLazy.push(ind)
+            }
+            return newLazy;
+          })
+        } else {
+          setLoadingPlaylist(false)
+        }
+      }
+    )
   }
 
   /**
@@ -224,17 +228,19 @@ function SelectorSection({ list }) {
   }, [isLoggedIn, playlist]);
   
   /**
-   * [effect] updates playlist listing (uuh..) when pageIndex is changed.
+   * [effect] updates playlist listing (uuh..) when index is changed.
+   * 
+   * This no longer updates the index because the index is updated by
+   * `handleScroll`
    */
   useEffect(() => {
     if (isLoggedIn && playlist) {
       list.setSelected([]);
-      setLoadingPlaylist(true);
       setPlExists(true);
-      getPlaylistContents();
+      getPlaylistContents(1);
       setPlaylistInput(playlist || playlistInput);
     }
-  }, [isLoggedIn, playlist, pageIndex]);
+  }, [isLoggedIn, playlist]);
 
   /**
    * [callback] update playlist url input
@@ -293,38 +299,68 @@ function SelectorSection({ list }) {
     }
   }
 
-  let listing = [];
-  if (playlistPage) {
-    // processes playlist entries into ones readable by SelectableList
-    listing = playlistPage.items.map((entry, index) => {
-      const item = {
-        index: playlistPage.offset + index + 1,
-        id: entry.id,
-        display: entry.title,
-        cover: entry.icon,
-        artist: entry.artist
+  // ==== Infinite List (lazy loaded, but no virtualization) ====
+
+  /**
+   * [callback] either manually or via scroll event, update scroll parameters and
+   * load new playlist pages if needed
+   */
+  function handleScroll() {
+    let target = scrollContainer.current;
+    if (target === undefined || target === null) {
+      return
+    }
+
+    // save scroll for next sessions/reload
+    // NOTE: MAYBE save in database but I don't immediately see why right now
+    localStorage.setItem("plScrollTop", target.scrollTop.toString())
+
+    if (target.scrollTop < 0) {
+      return;
+    }
+
+    // calculate before and after index positions
+    let oldLowerBoundIndex = Math.max(Math.floor(plScrollTop / 40) + 1 - VIRT_OFFSET, 0);
+    let oldHigherBoundIndex = Math.min(Math.floor(plScrollBottom / 40) + 1 + VIRT_OFFSET, plTotal);
+    setPlScrollTop(target.scrollTop);
+    setPlScrollBottom(target.scrollTop + target.offsetHeight);
+
+    let lowerIndex = Math.floor(target.scrollTop / 40) + 1;
+    let higherIndex = Math.floor((target.scrollTop + target.offsetHeight) / 40) + 1;
+    setIndex(lowerIndex);
+    setIndexInput(lowerIndex);
+
+    let newLowerBoundIndex = Math.max(lowerIndex - VIRT_OFFSET, 0);
+    let newHigherBoundIndex = Math.min(higherIndex + VIRT_OFFSET, plTotal);
+
+    // here, we decide if we want to load another page
+    if (totalList[lowerIndex] === undefined) {
+      let page = Math.ceil(newLowerBoundIndex / ENTRIES_PER_PAGE);
+      getPlaylistContents(page, true)
+    }
+
+    if (totalList[higherIndex] === undefined) {
+      let page = Math.ceil(newHigherBoundIndex / ENTRIES_PER_PAGE);
+      getPlaylistContents(page, true)
+    }
+
+    if (oldLowerBoundIndex > newLowerBoundIndex) {
+      if (totalList[newLowerBoundIndex] === undefined) {
+        let page = Math.ceil(newLowerBoundIndex / ENTRIES_PER_PAGE);
+        if (page <= 0) {
+          page = 1;
+        }
+        getPlaylistContents(page, true)
       }
-      return item
-    })
-  }
-
-  const [plScrollTop, setPlScrollTop] = useState(0);
-  const [plScrollBottom, setPlScrollBottom] = useState(0);
-
-  function handleScroll(event) {
-    // The target of the event is the div that is being scrolled
-    setPlScrollTop(event.target.scrollTop);
-    setPlScrollTop(event.target.scrollTop + event.target.offsetHeight);
-    console.log(event.target.scrollTop, "---", event.target.scrollTop + event.target.offsetHeight);
-  };
-
-  const containerRef = useRef(null);
-
-  const scrollToBottom = () => {
-    containerRef.current?.scrollTo({
-      top: containerRef.current.scrollHeight,
-      behavior: "smooth",
-    });
+    } else if (oldHigherBoundIndex < newHigherBoundIndex) {
+      if (totalList[newHigherBoundIndex] === undefined) {
+        let page = Math.ceil(newHigherBoundIndex / ENTRIES_PER_PAGE);
+        if (page > plTotal) {
+          page = plTotal;
+        }
+        getPlaylistContents(page, true)
+      }
+    }
   };
 
   return (
@@ -349,7 +385,7 @@ function SelectorSection({ list }) {
       </div>
       {(isLoggedIn) &&
       <>
-        <div className="list-container" ref={containerRef}  onScroll={handleScroll}>
+        <div className="list-container" ref={scrollContainer} onScroll={handleScroll}>
           {(list.hasNoSelections()) &&
             <div className="playlist-load-notifier">
               {[...Array(15)].map((_) => {
@@ -359,17 +395,27 @@ function SelectorSection({ list }) {
                 })}
             </div>
           }
-          <ul id="track-selector-from-playlist" className="selectable-list">
+          <ul
+            id="track-selector-from-playlist"
+            className="selectable-list"
+            style={{
+              height: `${plTotal * 40}px`,
+              position: "relative"
+            }}
+          >
             {
-              playlistPage && 
-              playlistPage.items.map((entry, index) => 
+              Object.entries(totalList).map(([ind, entry]) => 
                 <li
                   key={entry.id}
                   data-id={entry.id}
                   className={"selectable-list-entry" + (list.isSelected(entry.id) ? " selected" : "")}
                   onClick={(e) => {e.target instanceof HTMLElement && selectEntry(entry.id)}}
+                  style={{
+                    top: `${40 * (ind - 1)}px`,
+                    position: "absolute"
+                  }}
                 >
-                  <div className="index">{playlistPage.offset + index + 1}</div>
+                  <div className="index">{ind}</div>
                   <div className="cover">
                     {(entry.icon != null && entry.icon.length != 0) &&
                       <img src={entry.icon} />
@@ -387,11 +433,9 @@ function SelectorSection({ list }) {
           </ul>
         </div>
         <div className="pagination-options">
-          <button disabled={pageIndex <= 1 || list.hasNoSelections()} onClick={goToFirstPage}>{"<<"}</button>
-          <button disabled={pageIndex <= 1 || list.hasNoSelections()} onClick={goToPreviousPage}>{"<"}</button>
           <input
             type="text"
-            value={pageIndexInput}
+            value={indexInput}
             onChange={onIndexChange}
             pattern="\d+"
             onBlur={onIndexSubmit}
@@ -399,10 +443,7 @@ function SelectorSection({ list }) {
             onSubmit={onIndexSubmit}
             disabled={list.hasNoSelections()}
           />
-          <button disabled={pageIndex >= maxPages || list.hasNoSelections()} onClick={goToNextPage}>{">"}</button>
-          <button disabled={pageIndex >= maxPages || list.hasNoSelections()} onClick={goToLastPage}>{">>"}</button>
         </div>
-        <div className="pagination-pages-num">{maxPages} Pages</div>
       </>
       }
     </div>
